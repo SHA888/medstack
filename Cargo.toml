@@ -1,0 +1,17 @@
+[workspace]
+members = [
+  "crates/qa-core",
+  "crates/identity-verification",
+  "crates/ingestion",
+  "crates/search",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Kresna Sucandra <kresnasucandra@gmail.com>"]
+license = "AGPL-3.0"
+
+[[workspace.metadata.cargo-deny.advisories]]
+# Placeholder for cargo-deny configuration

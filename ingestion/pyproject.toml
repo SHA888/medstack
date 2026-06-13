@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "medstack-ingestion"
+version = "0.1.0"
+description = "medstack license-aware import/ETL (Python)"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+# uv configuration for this project

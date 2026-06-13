@@ -1,0 +1,13 @@
+{
+  "name": "medstack-web",
+  "version": "0.1.0",
+  "description": "medstack web client (TypeScript/React)",
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Not yet implemented'",
+    "build": "echo 'Not yet implemented'",
+    "test": "echo 'Not yet implemented'"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

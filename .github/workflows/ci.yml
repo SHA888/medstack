@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  rust:
+    name: Rust (fmt, clippy, semver-checks, deny)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo fmt check
+        run: cargo fmt --check
+      - name: cargo clippy
+        run: cargo clippy -D warnings
+      - name: cargo-semver-checks
+        run: |
+          cargo install cargo-semver-checks
+          cargo semver-checks
+      - name: cargo-deny
+        run: |
+          cargo install cargo-deny
+          cargo deny check
+
+  typescript:
+    name: TypeScript (tsc, eslint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm tsc --noEmit
+      - run: pnpm eslint . --fix
+
+  python:
+    name: Python (ruff, mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: uv sync
+      - run: uv run ruff check --fix
+      - run: uv run mypy .
+
+  architecture:
+    name: Architecture (qa-core coupling test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --package qa-core --lib architecture_tests::
