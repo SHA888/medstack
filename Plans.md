@@ -21,8 +21,8 @@ Created: 2026-06-13
 | 0.3.3 | Create uv project stub for ingestion | `ingestion/pyproject.toml` with uv marker, minimal deps stubbed | - | cc:done [d3981dc] |
 | 0.3.4 | Configure CI (lint + semver + deny + typecheck) | CI runs: cargo fmt, cargo clippy -D warnings, cargo-semver-checks, cargo-deny, tsc --noEmit, ESLint, ruff+mypy | 0.3.1, 0.3.2, 0.3.3 | cc:done [d3981dc] |
 | 0.3.5 | Implement architecture test harness | Test file created at `crates/qa-core/tests/architecture.rs`; test asserts zero imports of identity-verification, ingestion, search; test runs in CI on every push; CI fails if test fails | 0.3.1 | cc:done [d3981dc] |
-| 0.4.1 | Draft on-topic scope definition | Document: clinical software/informatics/data IN; patient advice OUT; explicit moderation rules | - | cc:wip |
-| 0.4.2 | Write badge-semantics copy | UI copy clarifies: credential badge = engineering/informatics authority on software question, NOT clinical endorsement; patient advice out of scope | 0.4.1 | cc:wip |
+| 0.4.1 | Draft on-topic scope definition | Document: clinical software/informatics/data IN; patient advice OUT; explicit moderation rules | - | cc:done [b0da321] |
+| 0.4.2 | Write badge-semantics copy | UI copy clarifies: credential badge = engineering/informatics authority on software question, NOT clinical endorsement; patient advice out of scope | 0.4.1 | cc:done [b0da321] |
 
 **M0 exit criterion:** Both content and code licenses chosen and written; CI is green on empty workspace; scope doc drafted and badge semantics clear.
 
