@@ -1,0 +1,66 @@
+# Pre-commit hooks configuration.
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+# Bypass: git commit --no-verify
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-args=--ignore-all-in-fence]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Rust formatting and linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.0
+    hooks:
+      - id: ruff-format
+        name: ruff format (Python)
+        files: ^ingestion/
+      - id: ruff-check
+        name: ruff check (Python)
+        files: ^ingestion/
+        args: [--fix]
+
+  # Cargo fmt (Rust)
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+        args: [--all]
+      - id: clippy
+        args: [--all-targets, --all-features, --, -D, warnings]
+
+  # Cargo audit / deny
+  - repo: https://github.com/EmbarkStudios/cargo-deny-action
+    rev: v1.1.41
+    hooks:
+      - id: cargo-deny
+        args: [check, licenses]
+
+  # TypeScript / JavaScript (optional, runs only if pnpm.lock exists)
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        types_or: [json, yaml, markdown]
+        files: ^web/
+        additional_dependencies: [prettier]
+
+exclude: |
+  (?x)^(
+    target/|
+    node_modules/|
+    __pycache__|
+    \.venv/|
+    venv/|
+    \.pytest_cache/
+  )
