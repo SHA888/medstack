@@ -1,6 +1,6 @@
 # Credential Badge Semantics & UI Copy
 
-**Status**: M0.4.2 — clarifies what credential badges mean to users  
+**Status**: M0.4.2 — clarifies what credential badges mean to users
 **Safety boundary**: badges communicate domain expertise, never clinical endorsement
 
 ## The Problem
@@ -31,8 +31,8 @@ Credentials carry a **scope** that describes which domains they cover:
 ### Tooltip Text (on hover)
 
 ```
-This answer is from someone with verified [scope] credentials. 
-This badge means they have relevant domain expertise, NOT that they 
+This answer is from someone with verified [scope] credentials.
+This badge means they have relevant domain expertise, NOT that they
 are providing medical advice. Always consult your doctor for medical decisions.
 ```
 
@@ -68,8 +68,8 @@ The following copy **must appear** on every answer detail page where a user migh
 They are NOT clinical advice. Always consult your doctor for medical decisions.
 ```
 
-**Placement**: Below the question, above the first answer  
-**Style**: Light warning color (yellow background), readable but not alarming  
+**Placement**: Below the question, above the first answer
+**Style**: Light warning color (yellow background), readable but not alarming
 **Dismissible**: Yes (remembers dismissal for session)
 
 ### Per-Answer Safety Copy (if answer has Clinical credential)
@@ -80,8 +80,8 @@ Credential badges indicate domain expertise relevant to software/informatics,
 not medical advice for your personal health. Consult your doctor.
 ```
 
-**Placement**: Just above the badge, small italic text  
-**Style**: Subdued color (gray), no warning styling (not alarmist)  
+**Placement**: Just above the badge, small italic text
+**Style**: Subdued color (gray), no warning styling (not alarmist)
 **Conditional**: Only shown if credential scope includes "Clinical"
 
 ## What Badges Do NOT Mean
@@ -107,7 +107,7 @@ Explicitly state in help/FAQ:
 ```
 Welcome to medstack, a Q&A site for clinician-engineers.
 
-What we answer: How do you build clinical software? How do you integrate EHRs? 
+What we answer: How do you build clinical software? How do you integrate EHRs?
 How do you model clinical data? Verified credentials show domain expertise.
 
 What we don't: Medical advice for your health. For that, see your doctor.
@@ -116,16 +116,16 @@ What we don't: Medical advice for your health. For that, see your doctor.
 ### User reading an answer with a clinical credential
 
 ```
-💡 "Verified: MD + Software Engineer" means this person is a doctor 
-AND a software engineer. On THIS question about EHR data modeling, 
+💡 "Verified: MD + Software Engineer" means this person is a doctor
+AND a software engineer. On THIS question about EHR data modeling,
 that expertise matters. It does NOT mean they are advising you medically.
 ```
 
 ### User about to vote/reply
 
 ```
-Remember: medstack is about clinical software/informatics, not patient advice. 
-Your answer should help other engineers/informaticians build better systems, 
+Remember: medstack is about clinical software/informatics, not patient advice.
+Your answer should help other engineers/informaticians build better systems,
 not guide patients on medical decisions.
 ```
 

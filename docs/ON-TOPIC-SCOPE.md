@@ -1,6 +1,6 @@
 # On-Topic Scope & Safety Boundary
 
-**Status**: M0.4.1 — defines explicit content scope for moderation  
+**Status**: M0.4.1 — defines explicit content scope for moderation
 **Safety boundary**: Clinician-engineer knowledge commons; patient-facing medical advice strictly OUT
 
 ## In Scope

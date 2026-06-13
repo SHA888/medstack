@@ -1,6 +1,6 @@
 # Attribution Rendering Contract
 
-**Status**: M0.2.2 — defines non-strippable attribution for all mirrored content  
+**Status**: M0.2.2 — defines non-strippable attribution for all mirrored content
 **License choice**: CC BY-SA 4.0 (Option A selected; no quarantine partition)
 
 ## Contract
