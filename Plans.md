@@ -8,11 +8,11 @@ Created: 2026-06-13
 
 | Task | Content | DoD | Depends | Status |
 |------|---------|-----|---------|--------|
-| 0.1.1 | Decide native content license (CC BY-SA 4.0 Option A vs CC BY 4.0 Option B) | Decision ratified and documented in decision memo | - | cc:todo |
-| 0.1.2 | Reject CC BY-NC (Option C) explicitly with rationale | Decision memo records why C is rejected (incompatible with SE mirroring) | 0.1.1 | cc:todo |
-| 0.1.3 | Decide code license (AGPL-3.0 vs Apache-2.0 vs MIT) | Decision ratified with rationale for network-served commons argument | 0.1.1, 0.1.2 | cc:todo |
-| 0.1.4 | Write `LICENSE` file (code license) | File exists at root, uses chosen code license with standard headers | 0.1.3 | cc:todo |
-| 0.1.5 | Write `LICENSE-CONTENT.md` (content license choice + matrix) | File documents content license choice (A or B), per-source license matrix, rationale for choice | 0.1.1, 0.1.2, 0.1.3 | cc:todo |
+| 0.1.1 | Decide native content license (CC BY-SA 4.0 Option A vs CC BY 4.0 Option B) | Decision ratified and documented in decision memo | - | cc:done [66de413] |
+| 0.1.2 | Reject CC BY-NC (Option C) explicitly with rationale | Decision memo records why C is rejected (incompatible with SE mirroring) | 0.1.1 | cc:done [66de413] |
+| 0.1.3 | Decide code license (AGPL-3.0 vs Apache-2.0 vs MIT) | Decision ratified with rationale for network-served commons argument | 0.1.1, 0.1.2 | cc:done [66de413] |
+| 0.1.4 | Write `LICENSE` file (code license) | File exists at root, uses chosen code license with standard headers | 0.1.3 | cc:done [66de413] |
+| 0.1.5 | Write `LICENSE-CONTENT.md` (content license choice + matrix) | File documents content license choice (A or B), per-source license matrix, rationale for choice | 0.1.1, 0.1.2, 0.1.3 | cc:done [66de413] |
 | 0.2.1 | Define per-source license matrix | Documented: SE = CC BY-SA, Biostars = CC BY, FHIR Zulip = link-only | 0.1.1 | cc:done [61f65c5] |
 | 0.2.2 | Write attribution rendering contract | Contract specifies: source + author + license + date + link always present in all render paths, non-strippable, test-enforced | 0.2.1 | cc:done [bbec710] |
 | 0.2.3 | ~~Define quarantine-partition rules (Option B, not chosen)~~ | Option A (CC BY-SA 4.0 uniform) was chosen; quarantine partition rejected. See LICENSE-CONTENT.md "Why CC BY-SA, not CC BY?" for rationale. | 0.1.1 | cc:done [61f65c5] |
