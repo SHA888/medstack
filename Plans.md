@@ -13,16 +13,16 @@ Created: 2026-06-13
 | 0.1.3 | Decide code license (AGPL-3.0 vs Apache-2.0 vs MIT) | Decision ratified with rationale for network-served commons argument | 0.1.1, 0.1.2 | cc:done [66de413] |
 | 0.1.4 | Write `LICENSE` file (code license) | File exists at root, uses chosen code license with standard headers | 0.1.3 | cc:done [66de413] |
 | 0.1.5 | Write `LICENSE-CONTENT.md` (content license choice + matrix) | File documents content license choice (A or B), per-source license matrix, rationale for choice | 0.1.1, 0.1.2, 0.1.3 | cc:done [66de413] |
-| 0.2.1 | Define per-source license matrix | Documented: SE = CC BY-SA, Biostars = CC BY, FHIR Zulip = link-only | 0.1.1 | cc:done [61f65c5] |
-| 0.2.2 | Write attribution rendering contract | Contract specifies: source + author + license + date + link always present in all render paths, non-strippable, test-enforced | 0.2.1 | cc:done [bbec710] |
-| 0.2.3 | ~~Define quarantine-partition rules (Option B, not chosen)~~ | Option A (CC BY-SA 4.0 uniform) was chosen; quarantine partition rejected. See LICENSE-CONTENT.md "Why CC BY-SA, not CC BY?" for rationale. | 0.1.1 | cc:done [61f65c5] |
-| 0.3.1 | Create Cargo workspace stub | Cargo.toml root with workspace definition; four crates stubbed (`crates/qa-core/`, `crates/identity-verification/`, `crates/ingestion/`, `crates/search/`) with minimal Cargo.toml files; `cargo check` succeeds in root | - | cc:done [b96a174] |
-| 0.3.2 | Create pnpm workspace stub | Root `pnpm-workspace.yaml`, `web` package stubbed with `package.json` | - | cc:done [b96a174] |
-| 0.3.3 | Create uv project stub for ingestion | `ingestion/pyproject.toml` with uv marker, minimal deps stubbed | - | cc:done [b96a174] |
-| 0.3.4 | Configure CI (lint + semver + deny + typecheck) | CI runs: cargo fmt, cargo clippy -D warnings, cargo-semver-checks, cargo-deny, tsc --noEmit, ESLint, ruff+mypy | 0.3.1, 0.3.2, 0.3.3 | cc:done [bbf1640] |
-| 0.3.5 | Implement architecture test harness | Test file created at `crates/qa-core/tests/architecture.rs`; test asserts zero imports of identity-verification, ingestion, search; test runs in CI on every push; CI fails if test fails | 0.3.1 | cc:done [0f4fd68] |
-| 0.4.1 | Draft on-topic scope definition | Document: clinical software/informatics/data IN; patient advice OUT; explicit moderation rules | - | cc:done [bbec710] |
-| 0.4.2 | Write badge-semantics copy | UI copy clarifies: credential badge = engineering/informatics authority on software question, NOT clinical endorsement; patient advice out of scope | 0.4.1 | cc:done [bbec710] |
+| 0.2.1 | Define per-source license matrix | Documented: SE = CC BY-SA, Biostars = CC BY, FHIR Zulip = link-only | 0.1.1 | cc:todo |
+| 0.2.2 | Write attribution rendering contract | Contract specifies: source + author + license + date + link always present in all render paths, non-strippable, test-enforced | 0.2.1 | cc:todo |
+| 0.2.3 | ~~Define quarantine-partition rules (Option B, not chosen)~~ | Option A (CC BY-SA 4.0 uniform) was chosen; quarantine partition rejected. See LICENSE-CONTENT.md "Why CC BY-SA, not CC BY?" for rationale. | 0.1.1 | cc:todo |
+| 0.3.1 | Create Cargo workspace stub | Cargo.toml root with workspace definition; four crates stubbed (`crates/qa-core/`, `crates/identity-verification/`, `crates/ingestion/`, `crates/search/`) with minimal Cargo.toml files; `cargo check` succeeds in root | - | cc:todo |
+| 0.3.2 | Create pnpm workspace stub | Root `pnpm-workspace.yaml`, `web` package stubbed with `package.json` | - | cc:todo |
+| 0.3.3 | Create uv project stub for ingestion | `ingestion/pyproject.toml` with uv marker, minimal deps stubbed | - | cc:todo |
+| 0.3.4 | Configure CI (lint + semver + deny + typecheck) | CI runs: cargo fmt, cargo clippy -D warnings, cargo-semver-checks, cargo-deny, tsc --noEmit, ESLint, ruff+mypy | 0.3.1, 0.3.2, 0.3.3 | cc:todo |
+| 0.3.5 | Implement architecture test harness | Test file created at `crates/qa-core/tests/architecture.rs`; test asserts zero imports of identity-verification, ingestion, search; test runs in CI on every push; CI fails if test fails | 0.3.1 | cc:todo |
+| 0.4.1 | Draft on-topic scope definition | Document: clinical software/informatics/data IN; patient advice OUT; explicit moderation rules | - | cc:todo |
+| 0.4.2 | Write badge-semantics copy | UI copy clarifies: credential badge = engineering/informatics authority on software question, NOT clinical endorsement; patient advice out of scope | 0.4.1 | cc:todo |
 
 **M0 exit criterion:** Both content and code licenses chosen and written; CI is green on empty workspace; scope doc drafted and badge semantics clear.
 
