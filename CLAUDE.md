@@ -77,21 +77,20 @@ Once workspaces exist (task 0.3), the following will be standard:
 
 **Rust:**
 ```bash
-cd crates/qa-core
 cargo check
 cargo test
-cargo fmt
-cargo clippy -D warnings
-cargo semver-checks  # SemVer compliance before tags
-cargo deny           # Dependency audit
+cargo fmt --all
+cargo clippy --all-targets --all-features -- -D warnings  # `--` separates lint flags from cargo args
+cargo semver-checks  # SemVer compliance before tags (needs a published baseline)
+cargo deny check     # Dependency audit; reads deny.toml at workspace root
 ```
 
 **TypeScript:**
 ```bash
 cd web
 pnpm install
-pnpm tsc --noEmit   # Type check
-pnpm eslint . --fix
+pnpm exec tsc --noEmit   # Type check
+pnpm exec eslint .       # Lint (no --fix in CI: a gate checks, it does not mutate)
 pnpm test
 ```
 
@@ -99,15 +98,16 @@ pnpm test
 ```bash
 cd ingestion
 uv sync
-uv run ruff check --fix
+uv run ruff check          # add --fix locally only; CI runs check-only
 uv run mypy .
 uv run pytest
 ```
 
 **Architecture test (enforces coupling rule):**
 ```bash
-cargo test --package qa-core --lib architecture_tests::
-# Assert qa-core has zero outward deps
+cargo test --package qa-core --test architecture
+# Integration test (tests/architecture.rs); asserts qa-core has zero outward deps.
+# NOT --lib: the test lives in tests/, so --lib would match nothing and pass vacuously.
 ```
 
 ## Before writing any code

@@ -1,0 +1,28 @@
+# cargo-deny configuration. See https://embarkstudios.github.io/cargo-deny/
+# cargo-deny reads this file (NOT [workspace.metadata] in Cargo.toml).
+
+[advisories]
+# Deny crates with known security advisories.
+yanked = "deny"
+
+[licenses]
+# The workspace is AGPL-3.0-only. Allow that plus permissive licenses common
+# in the Rust dependency ecosystem. Add to this list as real dependencies land.
+allow = [
+  "AGPL-3.0-only",
+  "MIT",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-3.0",
+]
+confidence-threshold = 0.8
+
+[bans]
+# Warn on multiple versions of the same crate (bloat / drift signal).
+multiple-versions = "warn"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

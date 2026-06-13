@@ -8,51 +8,31 @@ on:
 
 jobs:
   rust:
-    name: Rust (fmt, clippy, semver-checks, deny)
+    name: Rust (fmt, clippy, deny)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - name: cargo fmt check
-        run: cargo fmt --check
+        run: cargo fmt --all --check
       - name: cargo clippy
-        run: cargo clippy -D warnings
-      - name: cargo-semver-checks
-        run: |
-          cargo install cargo-semver-checks
-          cargo semver-checks
+        # `--` separates cargo args from lint flags; without it cargo errors on -D.
+        run: cargo clippy --all-targets --all-features -- -D warnings
       - name: cargo-deny
-        run: |
-          cargo install cargo-deny
-          cargo deny check
+        # deny.toml lives at the workspace root; cargo-deny reads it automatically.
+        uses: EmbarkStudios/cargo-deny-action@v2
 
-  typescript:
-    name: TypeScript (tsc, eslint)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-      - run: pnpm install
-      - run: pnpm tsc --noEmit
-      - run: pnpm eslint . --fix
-
-  python:
-    name: Python (ruff, mypy)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v2
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-      - run: uv sync
-      - run: uv run ruff check --fix
-      - run: uv run mypy .
+  # cargo-semver-checks needs a published/tagged baseline to diff against. The
+  # crates are unpublished (v0.1.0, no baseline), so the gate has nothing to
+  # compare. Re-enable once the first version is published or tagged.
+  # semver:
+  #   name: Rust (semver-checks)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: obi1kenobi/cargo-semver-checks-action@v2
 
   architecture:
     name: Architecture (qa-core coupling test)
@@ -60,4 +40,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test --package qa-core --lib architecture_tests::
+      # Integration test target; run the whole `architecture` test file.
+      - run: cargo test --package qa-core --test architecture
+
+  typescript:
+    name: TypeScript (tsc, eslint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: pnpm install --no-frozen-lockfile
+      # The web package is an empty stub: typescript/eslint are not yet
+      # dependencies, so there is nothing to type-check or lint. These steps
+      # activate once web/package.json declares its devDependencies.
+      - name: tsc
+        run: pnpm --filter medstack-web exec tsc --noEmit
+        if: ${{ hashFiles('web/tsconfig.json') != '' }}
+      - name: eslint
+        run: pnpm --filter medstack-web exec eslint .
+        if: ${{ hashFiles('web/.eslintrc*', 'web/eslint.config.*') != '' }}
+
+  python:
+    name: Python (ruff, mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: uv sync --directory ingestion
+      # ruff/mypy are not yet declared as dev dependencies of the ingestion
+      # project. `uv run --with` fetches them ephemerally so the lint gate is
+      # real (read-only, no --fix) without polluting the empty stub manifest.
+      - name: ruff
+        run: uv run --directory ingestion --with ruff ruff check .
+      - name: mypy
+        run: uv run --directory ingestion --with mypy mypy .

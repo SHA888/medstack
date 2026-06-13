@@ -4,8 +4,9 @@ A credential-gated, durable Q&A corpus for clinician-engineer hybrids — the
 people who hold a clinical license *and* ship software (physician-developers,
 clinician data scientists, biomedical informaticians).
 
-Status: **pre-code scaffold (v0.0.0)**. No code is written until the LICENSE
-question (see below) is settled.
+Status: **M0 closed — workspace scaffold (v0.1.0)**. The LICENSE gate is settled
+(see below); the Cargo / pnpm / uv workspaces and CI are in place. Domain code
+(M1: `qa-core`) is the next milestone.
 
 ## Why this exists
 
@@ -57,36 +58,43 @@ never the reverse. The first months of content come from import/mirror, not
 from a cold public launch begging for answerers. Community validation is not
 sought prematurely.
 
-## The unresolved gate: LICENSE (must settle before any code)
+## The LICENSE gate (settled in M0)
 
-The import decision forces a choice, because Stack Exchange content is **CC
+The import decision forced a choice, because Stack Exchange content is **CC
 BY-SA**, which is **viral/share-alike**. Three coherent options for *our own*
-user-generated content license:
+user-generated content license were considered:
 
 | Option | Native content license | Consequence |
 | --- | --- | --- |
-| **A. CC BY-SA 4.0** (mirror SE) | CC BY-SA 4.0 | Simplest legally; SA obligation is uniform across native + mirrored SE content. Matches SO's own license. Viral. |
+| **A. CC BY-SA 4.0** (mirror SE) ✅ **chosen** | CC BY-SA 4.0 | Simplest legally; SA obligation is uniform across native + mirrored SE content. Matches SO's own license. Viral. |
 | **B. CC BY 4.0** native, quarantine SA imports | CC BY 4.0 | Native content more permissive/reusable; SE imports must live in a **separate partition** whose SA terms never mix into native answers. More engineering. |
-| **C. CC BY-NC** native | CC BY-NC 4.0 | Blocks commercial reuse of the corpus; **incompatible** with mirroring SE (SE is not NC). Rules out the chosen bootstrap. Not recommended. |
+| **C. CC BY-NC** native | CC BY-NC 4.0 | Blocks commercial reuse of the corpus; **incompatible** with mirroring SE (SE is not NC). Rules out the chosen bootstrap. Rejected. |
 
-Code license (the software, separate from content) is independently
-AGPL-3.0 vs Apache-2.0 vs MIT — a network-served knowledge commons has a
-strong argument for **AGPL-3.0** (copyleft over a network service prevents a
-closed fork capturing the community's contributions), but that is your call.
+**Decisions (ratified):**
 
-**No code until A or B is chosen for content, and a code license is set.**
+- **Content license: CC BY-SA 4.0 (Option A).** The share-alike obligation is the
+  commons-protection mechanism; Option B's quarantine partition is a taint-tracking
+  correctness liability. Full rationale in [`LICENSE-CONTENT.md`](LICENSE-CONTENT.md).
+- **Code license: AGPL-3.0-only.** Network-copyleft prevents a closed fork capturing
+  the community's contributions — the same commons logic at the software layer. See
+  [`LICENSE`](LICENSE).
 
-## Repository layout (planned, not a file tree)
-
-Markdown-first scaffold per OSS SDLC:
+## Repository layout
 
 - `README.md` — this file
-- `docs/ARCHITECTURE.md` — bounded contexts, ports/adapters, data model, scope & safety
-- `docs/TODO.md` — atomic task/subtask backlog, SemVer-milestoned
+- `ARCHITECTURE.md` — bounded contexts, ports/adapters, data model, scope & safety
+- `TODO.md` / `Plans.md` — atomic task/subtask backlog, SemVer-milestoned
+- `LICENSE`, `LICENSE-CONTENT.md` — code (AGPL-3.0-only) and content (CC BY-SA 4.0) licenses
+- `docs/` — attribution-rendering contract, on-topic scope, badge semantics
+- `Cargo.toml` + `crates/` — Rust workspace: `qa-core`, `identity-verification`, `ingestion`, `search`
+- `pnpm-workspace.yaml` + `web/` — TypeScript web client
+- `ingestion/pyproject.toml` — Python (uv) import/ETL project
+- `deny.toml` — cargo-deny policy (licenses, advisories, bans)
+- `.github/workflows/ci.yml` — fmt, clippy, cargo-deny, the architecture coupling test, tsc/eslint, ruff/mypy
 
-## Stack (planned)
+## Stack
 
 Rust core (library-first, binary-last), TypeScript (pnpm) web client,
 Python (uv) only for the import/ETL tooling where existing dump-parsing
 libraries make it cheaper. All dependencies latest stable. Constrained-machine
-friendly. Detail in `docs/ARCHITECTURE.md`.
+friendly. Detail in `ARCHITECTURE.md`.
