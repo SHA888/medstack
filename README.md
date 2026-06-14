@@ -4,9 +4,9 @@ A credential-gated, durable Q&A corpus for clinician-engineer hybrids — the
 people who hold a clinical license *and* ship software (physician-developers,
 clinician data scientists, biomedical informaticians).
 
-Status: **M0 closed — workspace scaffold (v0.1.0)**. The LICENSE gate is settled
-(see below); the Cargo / pnpm / uv workspaces and CI are in place. Domain code
-(M1: `qa-core`) is the next milestone.
+Status: **M0 closed** (workspace scaffold, LICENSE gate settled). **M1.1 in progress**
+(`qa-core` value objects: `QuestionId`, `AnswerId`, `UserId`, `Body`, `Tag`, `License`).
+Architecture and zero-outward-dep constraint enforced by CI. Next: aggregate roots (Question, Answer).
 
 ## Why this exists
 
