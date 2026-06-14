@@ -6,33 +6,106 @@
 
 use std::fmt;
 
-/// A jurisdiction scope for tag validity.
+/// The complete set of officially-assigned ISO 3166-1 alpha-2 country codes,
+/// stored sorted to permit binary search at parse time.
 ///
-/// Jurisdiction constrains the geographic or regulatory scope of a tag.
-/// Exhaustive matching is enforced by the compiler; unknown jurisdictions
-/// cannot be silently ignored.
+/// This is the canonical standard for representing countries/jurisdictions.
+/// Reserved, user-assigned, and exceptionally-reserved codes (e.g. `EU`, `UK`)
+/// are deliberately excluded: only officially-assigned codes are valid.
+const ISO_3166_1_ALPHA2: &[[u8; 2]] = &[
+    *b"AD", *b"AE", *b"AF", *b"AG", *b"AI", *b"AL", *b"AM", *b"AO", *b"AQ", *b"AR",
+    *b"AS", *b"AT", *b"AU", *b"AW", *b"AX", *b"AZ", *b"BA", *b"BB", *b"BD", *b"BE",
+    *b"BF", *b"BG", *b"BH", *b"BI", *b"BJ", *b"BL", *b"BM", *b"BN", *b"BO", *b"BQ",
+    *b"BR", *b"BS", *b"BT", *b"BV", *b"BW", *b"BY", *b"BZ", *b"CA", *b"CC", *b"CD",
+    *b"CF", *b"CG", *b"CH", *b"CI", *b"CK", *b"CL", *b"CM", *b"CN", *b"CO", *b"CR",
+    *b"CU", *b"CV", *b"CW", *b"CX", *b"CY", *b"CZ", *b"DE", *b"DJ", *b"DK", *b"DM",
+    *b"DO", *b"DZ", *b"EC", *b"EE", *b"EG", *b"EH", *b"ER", *b"ES", *b"ET", *b"FI",
+    *b"FJ", *b"FK", *b"FM", *b"FO", *b"FR", *b"GA", *b"GB", *b"GD", *b"GE", *b"GF",
+    *b"GG", *b"GH", *b"GI", *b"GL", *b"GM", *b"GN", *b"GP", *b"GQ", *b"GR", *b"GS",
+    *b"GT", *b"GU", *b"GW", *b"GY", *b"HK", *b"HM", *b"HN", *b"HR", *b"HT", *b"HU",
+    *b"ID", *b"IE", *b"IL", *b"IM", *b"IN", *b"IO", *b"IQ", *b"IR", *b"IS", *b"IT",
+    *b"JE", *b"JM", *b"JO", *b"JP", *b"KE", *b"KG", *b"KH", *b"KI", *b"KM", *b"KN",
+    *b"KP", *b"KR", *b"KW", *b"KY", *b"KZ", *b"LA", *b"LB", *b"LC", *b"LI", *b"LK",
+    *b"LR", *b"LS", *b"LT", *b"LU", *b"LV", *b"LY", *b"MA", *b"MC", *b"MD", *b"ME",
+    *b"MF", *b"MG", *b"MH", *b"MK", *b"ML", *b"MM", *b"MN", *b"MO", *b"MP", *b"MQ",
+    *b"MR", *b"MS", *b"MT", *b"MU", *b"MV", *b"MW", *b"MX", *b"MY", *b"MZ", *b"NA",
+    *b"NC", *b"NE", *b"NF", *b"NG", *b"NI", *b"NL", *b"NO", *b"NP", *b"NR", *b"NU",
+    *b"NZ", *b"OM", *b"PA", *b"PE", *b"PF", *b"PG", *b"PH", *b"PK", *b"PL", *b"PM",
+    *b"PN", *b"PR", *b"PS", *b"PT", *b"PW", *b"PY", *b"QA", *b"RE", *b"RO", *b"RS",
+    *b"RU", *b"RW", *b"SA", *b"SB", *b"SC", *b"SD", *b"SE", *b"SG", *b"SH", *b"SI",
+    *b"SJ", *b"SK", *b"SL", *b"SM", *b"SN", *b"SO", *b"SR", *b"SS", *b"ST", *b"SV",
+    *b"SX", *b"SY", *b"SZ", *b"TC", *b"TD", *b"TF", *b"TG", *b"TH", *b"TJ", *b"TK",
+    *b"TL", *b"TM", *b"TN", *b"TO", *b"TR", *b"TT", *b"TV", *b"TW", *b"TZ", *b"UA",
+    *b"UG", *b"UM", *b"US", *b"UY", *b"UZ", *b"VA", *b"VC", *b"VE", *b"VG", *b"VI",
+    *b"VN", *b"VU", *b"WF", *b"WS", *b"YE", *b"YT", *b"ZA", *b"ZM", *b"ZW",
+];
+
+/// A jurisdiction, represented as an ISO 3166-1 alpha-2 country code.
+///
+/// This is the international standard for identifying countries. Parse-Don't-Validate:
+/// only officially-assigned codes can be constructed, so an invalid jurisdiction
+/// is unrepresentable. The code is stored canonically (uppercase ASCII).
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Jurisdiction {
-    /// Global scope, no geographic restriction.
-    Global,
-    /// Indonesia (regulatory scope: STR, KKI, etc.).
-    Indonesia,
-    /// United States (regulatory scope: NPI, DEA, etc.).
-    UnitedStates,
-    /// European Union.
-    EuropeanUnion,
+pub struct Jurisdiction([u8; 2]);
+
+impl Jurisdiction {
+    /// Parse an ISO 3166-1 alpha-2 country code (case-insensitive on input,
+    /// stored uppercase).
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(JurisdictionError::InvalidLength)` if the input is not
+    /// exactly two ASCII letters.
+    /// Returns `Err(JurisdictionError::Unassigned)` if the two letters are not
+    /// an officially-assigned ISO 3166-1 alpha-2 code.
+    pub fn new(s: &str) -> Result<Self, JurisdictionError> {
+        let bytes = s.as_bytes();
+
+        if bytes.len() != 2 || !bytes[0].is_ascii_alphabetic() || !bytes[1].is_ascii_alphabetic() {
+            return Err(JurisdictionError::InvalidLength);
+        }
+
+        let code = [bytes[0].to_ascii_uppercase(), bytes[1].to_ascii_uppercase()];
+
+        if ISO_3166_1_ALPHA2.binary_search(&code).is_err() {
+            return Err(JurisdictionError::Unassigned);
+        }
+
+        Ok(Jurisdiction(code))
+    }
+
+    /// The ISO 3166-1 alpha-2 code as a string slice (always uppercase ASCII).
+    pub fn as_str(&self) -> &str {
+        // Safe: codes are validated ASCII letters at construction.
+        std::str::from_utf8(&self.0).expect("ISO code is valid ASCII")
+    }
 }
 
 impl fmt::Display for Jurisdiction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+/// Error when parsing a Jurisdiction.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum JurisdictionError {
+    /// Input is not exactly two ASCII letters.
+    InvalidLength,
+    /// The code is not an officially-assigned ISO 3166-1 alpha-2 code.
+    Unassigned,
+}
+
+impl fmt::Display for JurisdictionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Global => write!(f, "Global"),
-            Self::Indonesia => write!(f, "Indonesia"),
-            Self::UnitedStates => write!(f, "UnitedStates"),
-            Self::EuropeanUnion => write!(f, "EuropeanUnion"),
+            Self::InvalidLength => write!(f, "jurisdiction must be a two-letter ISO 3166-1 alpha-2 code"),
+            Self::Unassigned => write!(f, "jurisdiction is not an assigned ISO 3166-1 alpha-2 code"),
         }
     }
 }
+
+impl std::error::Error for JurisdictionError {}
 
 /// A date in YYYY-MM-DD format.
 ///
@@ -273,27 +346,68 @@ mod tests {
     }
 
     #[test]
+    fn jurisdiction_valid_codes() {
+        assert_eq!(Jurisdiction::new("US").unwrap().as_str(), "US");
+        assert_eq!(Jurisdiction::new("ID").unwrap().as_str(), "ID");
+        assert_eq!(Jurisdiction::new("JP").unwrap().as_str(), "JP");
+        assert_eq!(Jurisdiction::new("GB").unwrap().as_str(), "GB");
+    }
+
+    #[test]
+    fn jurisdiction_canonicalizes_to_uppercase() {
+        assert_eq!(Jurisdiction::new("us").unwrap().as_str(), "US");
+        assert_eq!(Jurisdiction::new("id").unwrap().as_str(), "ID");
+        assert_eq!(Jurisdiction::new("Jp").unwrap().as_str(), "JP");
+    }
+
+    #[test]
     fn jurisdiction_display() {
-        assert_eq!(format!("{}", Jurisdiction::Global), "Global");
-        assert_eq!(format!("{}", Jurisdiction::Indonesia), "Indonesia");
-        assert_eq!(format!("{}", Jurisdiction::UnitedStates), "UnitedStates");
-        assert_eq!(format!("{}", Jurisdiction::EuropeanUnion), "EuropeanUnion");
+        assert_eq!(format!("{}", Jurisdiction::new("US").unwrap()), "US");
+        assert_eq!(format!("{}", Jurisdiction::new("FR").unwrap()), "FR");
+    }
+
+    #[test]
+    fn jurisdiction_rejects_wrong_length() {
+        assert_eq!(Jurisdiction::new("U").unwrap_err(), JurisdictionError::InvalidLength);
+        assert_eq!(Jurisdiction::new("USA").unwrap_err(), JurisdictionError::InvalidLength);
+        assert_eq!(Jurisdiction::new("").unwrap_err(), JurisdictionError::InvalidLength);
+    }
+
+    #[test]
+    fn jurisdiction_rejects_non_alphabetic() {
+        assert_eq!(Jurisdiction::new("U1").unwrap_err(), JurisdictionError::InvalidLength);
+        assert_eq!(Jurisdiction::new("-1").unwrap_err(), JurisdictionError::InvalidLength);
+    }
+
+    #[test]
+    fn jurisdiction_rejects_unassigned_codes() {
+        // ZZ is reserved for user-assignment, never officially assigned.
+        assert_eq!(Jurisdiction::new("ZZ").unwrap_err(), JurisdictionError::Unassigned);
+        // EU and UK are exceptionally-reserved, not officially-assigned alpha-2.
+        assert_eq!(Jurisdiction::new("EU").unwrap_err(), JurisdictionError::Unassigned);
+        assert_eq!(Jurisdiction::new("UK").unwrap_err(), JurisdictionError::Unassigned);
+    }
+
+    #[test]
+    fn iso_table_is_sorted() {
+        // Binary search at parse time depends on the table being sorted.
+        assert!(ISO_3166_1_ALPHA2.windows(2).all(|w| w[0] < w[1]));
     }
 
     #[test]
     fn tag_valid_construction() {
-        let tag = Tag::new("clinical-software", "2025-06-14", Jurisdiction::Global)
+        let tag = Tag::new("clinical-software", "2025-06-14", Jurisdiction::new("US").unwrap())
             .expect("valid");
 
         assert_eq!(tag.label(), "clinical-software");
         assert_eq!(tag.date(), Date::new("2025-06-14").unwrap());
-        assert_eq!(tag.jurisdiction(), Jurisdiction::Global);
+        assert_eq!(tag.jurisdiction(), Jurisdiction::new("US").unwrap());
     }
 
     #[test]
     fn tag_rejects_empty_label() {
         assert_eq!(
-            Tag::new("", "2025-06-14", Jurisdiction::Global).unwrap_err(),
+            Tag::new("", "2025-06-14", Jurisdiction::new("US").unwrap()).unwrap_err(),
             TagError::EmptyLabel
         );
     }
@@ -301,27 +415,27 @@ mod tests {
     #[test]
     fn tag_rejects_whitespace_label() {
         assert_eq!(
-            Tag::new("   ", "2025-06-14", Jurisdiction::Global).unwrap_err(),
+            Tag::new("   ", "2025-06-14", Jurisdiction::new("US").unwrap()).unwrap_err(),
             TagError::EmptyLabel
         );
     }
 
     #[test]
     fn tag_rejects_invalid_date() {
-        let err = Tag::new("tag", "2025-13-01", Jurisdiction::Global).unwrap_err();
+        let err = Tag::new("tag", "2025-13-01", Jurisdiction::new("US").unwrap()).unwrap_err();
         assert!(matches!(err, TagError::InvalidDate(DateError::InvalidMonth)));
     }
 
     #[test]
     fn tag_display() {
-        let tag = Tag::new("rust", "2024-01-15", Jurisdiction::UnitedStates)
+        let tag = Tag::new("rust", "2024-01-15", Jurisdiction::new("US").unwrap())
             .expect("valid");
-        assert_eq!(format!("{}", tag), "rust@2024-01-15#UnitedStates");
+        assert_eq!(format!("{}", tag), "rust@2024-01-15#US");
     }
 
     #[test]
     fn tag_preserves_label_spacing() {
-        let tag = Tag::new("  clinical-software  ", "2025-06-14", Jurisdiction::Global)
+        let tag = Tag::new("  clinical-software  ", "2025-06-14", Jurisdiction::new("US").unwrap())
             .expect("valid");
         // Label is stored as-is; we validate only that non-whitespace exists.
         assert_eq!(tag.label(), "  clinical-software  ");
@@ -329,12 +443,12 @@ mod tests {
 
     #[test]
     fn multiple_jurisdictions() {
-        let global = Tag::new("testing", "2025-06-14", Jurisdiction::Global).unwrap();
-        let us = Tag::new("testing", "2025-06-14", Jurisdiction::UnitedStates).unwrap();
-        let indonesia = Tag::new("testing", "2025-06-14", Jurisdiction::Indonesia).unwrap();
+        let us = Tag::new("testing", "2025-06-14", Jurisdiction::new("US").unwrap()).unwrap();
+        let id = Tag::new("testing", "2025-06-14", Jurisdiction::new("ID").unwrap()).unwrap();
+        let jp = Tag::new("testing", "2025-06-14", Jurisdiction::new("JP").unwrap()).unwrap();
 
-        assert_ne!(global, us);
-        assert_ne!(us, indonesia);
-        assert_eq!(global.jurisdiction(), Jurisdiction::Global);
+        assert_ne!(us, id);
+        assert_ne!(id, jp);
+        assert_eq!(us.jurisdiction(), Jurisdiction::new("US").unwrap());
     }
 }
