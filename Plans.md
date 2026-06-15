@@ -36,7 +36,7 @@ Created: 2026-06-13
 | 1.1.2 | Create `Body` value object (non-empty, parsed) | `Body` type makes empty body unrepresentable; parser rejects empty/whitespace-only strings | 1.1.1 | cc:done [e63eebf] |
 | 1.1.3 | Create `Tag` with date and jurisdiction facets | `Tag` enum includes `date` (YYYY-MM-DD) and `jurisdiction` fields; parser validates format | 1.1.1 | cc:done [88205a5] |
 | 1.1.4 | Create `License` enum (CcBySa4, CcBy4, Native, LinkOnly) | Exhaustive enum with no catch-all; unknown license ⇒ parse error; compiler prevents catch-all | 1.1.1 | cc:done [b424c85] |
-| 1.2.1 | Create `VerifiedCredential` opaque token (private constructor) | Constructor private to identity-verification crate; trybuild compile-fail test asserts qa-core cannot construct one | 1.1.1 | cc:todo |
+| 1.2.1 | Create `VerifiedCredential` opaque token (private constructor) | Constructor private to identity-verification crate; trybuild compile-fail test asserts qa-core cannot construct one | 1.1.1 | cc:done [f6c8adb] |
 | 1.2.2 | Add `scope` (Clinical/Engineering/Research) and `expiry` to `VerifiedCredential` | Scope and expiry are first-class fields; typestate enforces valid lifecycle | 1.2.1 | cc:todo |
 | 1.2.3 | Implement `authority_weight()` as pure function of (scope, freshness) | Pure function computed from scope and expiry; no hidden state; deterministic on same inputs | 1.2.2 | cc:todo |
 | 1.3.1 | Create `Question` aggregate with revision history | Aggregate includes `QuestionId`, `Body`, `author_id`, `created_at`, `revisions: Vec<Revision>` | 1.1.1, 1.1.2 | cc:todo |
