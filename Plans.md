@@ -39,7 +39,7 @@ Created: 2026-06-13
 | 1.2.1 | Create `VerifiedCredential` opaque token (private constructor) | Constructor private to identity-verification crate; trybuild compile-fail test asserts qa-core cannot construct one | 1.1.1 | cc:done [b036c28] |
 | 1.2.2 | Add `scope` (Clinical/Engineering/Research) and `expiry` to `VerifiedCredential` | Scope and expiry are first-class fields; typestate enforces valid lifecycle | 1.2.1 | cc:done [3df584b] |
 | 1.2.3 | Implement `authority_weight()` as pure function of (scope, freshness) | Pure function computed from scope and expiry; no hidden state; deterministic on same inputs | 1.2.2 | cc:done [94e25cd] |
-| 1.3.1 | Create `Question` aggregate with revision history | Aggregate includes `QuestionId`, `Body`, `author_id`, `created_at`, `revisions: Vec<Revision>` | 1.1.1, 1.1.2 | cc:todo |
+| 1.3.1 | Create `Question` aggregate with revision history | Aggregate includes `QuestionId`, `Body`, `author_id`, `created_at`, `revisions: Vec<Revision>` | 1.1.1, 1.1.2 | cc:done [e4f0874] |
 | 1.3.2 | Create `Answer` aggregate with revision history and optional credential weight | Aggregate includes `AnswerId`, `Body`, `author_id`, `optional: VerifiedCredential`, `revisions`, `Vote` tracking | 1.1.1, 1.1.2, 1.2.1 | cc:todo |
 | 1.3.3 | Create `Vote` with `StillValid` variant | Vote enum: Helpful, Unhelpful, StillValid (perishability signal); StillValid count tracked per answer | 1.3.2 | cc:todo |
 | 1.4.1 | Define `CredentialPort` trait | Port: fn verify_credential(id: UserId) → Option<VerifiedCredential>; identity-verification implements | 1.2.1 | cc:todo |
