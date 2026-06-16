@@ -7,7 +7,8 @@
 //! This enforces the architectural rule: only ports point outward; the domain logic
 //! itself has zero outward dependencies.
 
-use crate::domain::id::UserId;
+use crate::domain::id::{ContentId, UserId};
+use crate::domain::license::License;
 
 /// Port for credential verification.
 ///
@@ -40,9 +41,43 @@ pub trait CredentialPort {
     // circular dependencies during M1 (library-only phase).
 }
 
+/// Port for content source licensing.
+///
+/// This port defines how qa-core queries the license of content from external sources.
+/// The ingestion crate implements this port, tracking which license applies to each
+/// piece of content based on its origin (Stack Exchange, Biostars, native, etc).
+///
+/// This is essential for:
+/// - Ensuring all content respects its original license
+/// - Attribution rendering (must know the license to render correct attribution)
+/// - Legal compliance (must verify content can be used before including it)
+///
+/// Implementations must:
+/// - Return the correct License for each content ID
+/// - Never return an unknown or invalid license (exhaustive enum enforces this)
+/// - Be consistent: same content ID always returns same license
+pub trait ContentSourcePort {
+    /// Query the license of a piece of content by ID.
+    ///
+    /// # Arguments
+    /// - `content_id`: The content to query (question, answer, or imported item)
+    ///
+    /// # Returns
+    /// - The License that applies to this content (exhaustive enum, no unknowns)
+    ///
+    /// # Implementation notes
+    /// Implementers (ingestion crate) are responsible for:
+    /// - Tracking per-source license rules (SE=CC BY-SA, Biostars=CC BY, etc)
+    /// - Assigning licenses to mirrored content based on source
+    /// - Assigning licenses to native content based on platform policy
+    /// - Never returning an unknown license (compile-fail test enforces this)
+    fn source_license(&self, content_id: ContentId) -> License;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     /// Mock credential port for testing qa-core logic.
     struct MockCredentialPort {
@@ -80,5 +115,46 @@ mod tests {
         assert_eq!(port.verify_credential(UserId::new(42)), Some(()));
         assert_eq!(port.verify_credential(UserId::new(100)), Some(()));
         assert_eq!(port.verify_credential(UserId::new(50)), None);
+    }
+
+    /// Mock content source port for testing qa-core logic.
+    struct MockContentSourcePort {
+        licenses: HashMap<u64, License>,
+    }
+
+    impl MockContentSourcePort {
+        fn new(licenses: HashMap<u64, License>) -> Self {
+            MockContentSourcePort { licenses }
+        }
+    }
+
+    impl ContentSourcePort for MockContentSourcePort {
+        fn source_license(&self, content_id: ContentId) -> License {
+            self.licenses
+                .get(&content_id.inner())
+                .copied()
+                .expect("content must have a license")
+        }
+    }
+
+    #[test]
+    fn mock_content_port_returns_correct_licenses() {
+        let mut licenses = HashMap::new();
+        licenses.insert(1, License::CcBySa4);
+        licenses.insert(2, License::CcBy4);
+        licenses.insert(3, License::LinkOnly);
+
+        let port = MockContentSourcePort::new(licenses);
+
+        assert_eq!(port.source_license(ContentId::new(1)), License::CcBySa4);
+        assert_eq!(port.source_license(ContentId::new(2)), License::CcBy4);
+        assert_eq!(port.source_license(ContentId::new(3)), License::LinkOnly);
+    }
+
+    #[test]
+    #[should_panic]
+    fn mock_content_port_panics_for_unlicensed_content() {
+        let port = MockContentSourcePort::new(HashMap::new());
+        let _ = port.source_license(ContentId::new(999));
     }
 }

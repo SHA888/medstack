@@ -76,6 +76,31 @@ impl std::fmt::Display for UserId {
     }
 }
 
+/// Unique identifier for a piece of content (question, answer, or imported).
+///
+/// Private constructor enforces that only qa-core can create content IDs.
+/// Used to reference content when querying external systems (e.g., ingestion for license info).
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ContentId(u64);
+
+impl ContentId {
+    /// Construct a new ContentId. Only qa-core domain module can call this.
+    pub fn new(id: u64) -> Self {
+        ContentId(id)
+    }
+
+    /// Access the inner ID value.
+    pub fn inner(self) -> u64 {
+        self.0
+    }
+}
+
+impl std::fmt::Display for ContentId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "C{}", self.0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -129,5 +154,48 @@ mod tests {
         set.insert(q1);
         assert!(set.contains(&q2)); // q1 and q2 are equal
         assert!(!set.contains(&q3));
+    }
+
+    #[test]
+    fn content_id_construction() {
+        let c = ContentId::new(42);
+        assert_eq!(c.inner(), 42);
+    }
+
+    #[test]
+    fn content_id_display() {
+        assert_eq!(format!("{}", ContentId::new(42)), "C42");
+    }
+
+    #[test]
+    fn content_ids_are_comparable() {
+        let c1 = ContentId::new(1);
+        let c2 = ContentId::new(1);
+        let c3 = ContentId::new(2);
+
+        assert_eq!(c1, c2);
+        assert_ne!(c1, c3);
+        assert!(c1 < c3);
+    }
+
+    #[test]
+    fn content_ids_are_hashable() {
+        use std::collections::HashSet;
+
+        let mut set = HashSet::new();
+        let c1 = ContentId::new(1);
+        let c2 = ContentId::new(1);
+        let c3 = ContentId::new(2);
+
+        set.insert(c1);
+        assert!(set.contains(&c2));
+        assert!(!set.contains(&c3));
+    }
+
+    #[test]
+    fn content_id_is_copy() {
+        let c1 = ContentId::new(1);
+        let c2 = c1; // implicit copy
+        assert_eq!(c1, c2);
     }
 }
