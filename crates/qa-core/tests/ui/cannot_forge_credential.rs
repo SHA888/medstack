@@ -1,4 +1,4 @@
-// This file intentionally tries to import VerifiedCredential from qa-core.
+// This file intentionally tries to import VerifiedCredential from identity-verification.
 // It should fail to compile because qa-core has no dependency on identity-verification.
 // This architectural constraint (verified by the architecture test in ci.yml) prevents
 // qa-core from forging credentials. The compile-fail test documents this boundary.
