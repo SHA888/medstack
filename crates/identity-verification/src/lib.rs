@@ -218,7 +218,7 @@ impl VerifiedCredential<Active> {
         };
 
         let freshness_window = FRESHNESS_WINDOW_SECS as f64;
-        let freshness_multiplier = (time_to_expiry / freshness_window).min(1.0).max(0.0);
+        let freshness_multiplier = (time_to_expiry / freshness_window).clamp(0.0, 1.0);
 
         BASE_WEIGHT * freshness_multiplier
     }
@@ -333,7 +333,10 @@ mod tests {
                 .unwrap()
                 .activate();
         let weight = cred.authority_weight();
-        assert!((weight - 1.0).abs() < 1e-9, "credential 1 year away should have weight ~1.0");
+        assert!(
+            (weight - 1.0).abs() < 1e-9,
+            "credential 1 year away should have weight ~1.0"
+        );
     }
 
     #[test]
@@ -346,7 +349,10 @@ mod tests {
                 .activate();
         let weight = cred.authority_weight();
         // Half the time to expiry → weight should be around 0.5 (within tolerance)
-        assert!(weight > 0.4 && weight < 0.6, "credential 6 months away should have weight ~0.5");
+        assert!(
+            weight > 0.4 && weight < 0.6,
+            "credential 6 months away should have weight ~0.5"
+        );
     }
 
     #[test]
@@ -359,7 +365,10 @@ mod tests {
                 .activate();
         let weight = cred.authority_weight();
         // 1 day out of 365 days ≈ 0.0027
-        assert!(weight < 0.01, "credential 1 day away should have weight < 0.01");
+        assert!(
+            weight < 0.01,
+            "credential 1 day away should have weight < 0.01"
+        );
     }
 
     #[test]
@@ -383,15 +392,18 @@ mod tests {
     #[test]
     fn authority_weight_same_for_all_scopes() {
         let expiry = SystemTime::now() + std::time::Duration::from_secs(90 * 24 * 3600);
-        let clinical = VerifiedCredential::issue("clinical".to_string(), CredentialScope::Clinical, expiry)
-            .unwrap()
-            .activate();
-        let engineering = VerifiedCredential::issue("eng".to_string(), CredentialScope::Engineering, expiry)
-            .unwrap()
-            .activate();
-        let research = VerifiedCredential::issue("research".to_string(), CredentialScope::Research, expiry)
-            .unwrap()
-            .activate();
+        let clinical =
+            VerifiedCredential::issue("clinical".to_string(), CredentialScope::Clinical, expiry)
+                .unwrap()
+                .activate();
+        let engineering =
+            VerifiedCredential::issue("eng".to_string(), CredentialScope::Engineering, expiry)
+                .unwrap()
+                .activate();
+        let research =
+            VerifiedCredential::issue("research".to_string(), CredentialScope::Research, expiry)
+                .unwrap()
+                .activate();
 
         let w_clinical = clinical.authority_weight();
         let w_engineering = engineering.authority_weight();
@@ -412,6 +424,9 @@ mod tests {
                 .unwrap()
                 .activate();
         let weight = cred.authority_weight();
-        assert!((weight - 1.0).abs() < 1e-9, "credential 5 years away should be clamped to 1.0");
+        assert!(
+            (weight - 1.0).abs() < 1e-9,
+            "credential 5 years away should be clamped to 1.0"
+        );
     }
 }
