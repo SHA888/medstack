@@ -5,7 +5,7 @@
 
 ## The Problem
 
-A credential badge next to a medical Q&A answer can be misread as "this person is endorsing this as safe/correct medical advice for you." It is not. A clinician's software expertise does not make them your doctor, and a medstack answer is never a substitute for clinical consultation.
+A credential badge next to a medical Q&A answer can be misread as "this person is endorsing this as safe/correct medical advice for you." It is not. A clinician's software expertise does not make them your doctor, and a MedOverflow answer is never a substitute for clinical consultation.
 
 This document specifies the UI copy, badge placement, and language that prevents this misreading.
 
@@ -64,7 +64,7 @@ The following copy **must appear** on every answer detail page where a user migh
 ### Disclaimer Banner (if any answer on the page has a clinical credential)
 
 ```
-⚠️ medstack answers are peer-validated Q&A about clinical software and data.
+⚠️ MedOverflow answers are peer-validated Q&A about clinical software and data.
 They are NOT clinical advice. Always consult your doctor for medical decisions.
 ```
 
@@ -105,7 +105,7 @@ Explicitly state in help/FAQ:
 ### First-time user landing on a clinical Q&A
 
 ```
-Welcome to medstack, a Q&A site for clinician-engineers.
+Welcome to MedOverflow, a Q&A site for clinician-engineers.
 
 What we answer: How do you build clinical software? How do you integrate EHRs?
 How do you model clinical data? Verified credentials show domain expertise.
@@ -124,7 +124,7 @@ that expertise matters. It does NOT mean they are advising you medically.
 ### User about to vote/reply
 
 ```
-Remember: medstack is about clinical software/informatics, not patient advice.
+Remember: MedOverflow is about clinical software/informatics, not patient advice.
 Your answer should help other engineers/informaticians build better systems,
 not guide patients on medical decisions.
 ```

@@ -37,7 +37,7 @@ The rendering path **must not have a code path that omits any of these five fiel
 
 ### Native vs. Mirrored
 
-- **Native** (user-generated Q&A on medstack): License::Native(CcBySa4); no external attribution required
+- **Native** (user-generated Q&A on MedOverflow): License::Native(CcBySa4); no external attribution required
 - **Mirrored** (Stack Exchange, Biostars): License::CcBySa4 or License::CcBy4; all five fields mandatory
 - **Link-only** (FHIR Zulip): License::LinkOnly; source + author + link mandatory; body never copied
 
@@ -48,7 +48,7 @@ The rendering path **must not have a code path that omits any of these five fiel
 | Stack Exchange | CC BY-SA 4.0 | Source, Author, License, Date, Link | ✓ Yes | Viral SA applies to derivative works |
 | Biostars | CC BY 4.0 | Source, Author, License, Date, Link | ✓ Yes | Attribution required; no SA |
 | FHIR Zulip | Link only | Source, Author, Link | ✗ No | Not open-licensed; reference only |
-| medstack native | CC BY-SA 4.0 | (none; no external source) | N/A | User-generated; SA applies to subsequent use |
+| MedOverflow native | CC BY-SA 4.0 | (none; no external source) | N/A | User-generated; SA applies to subsequent use |
 
 ## CI enforcement
 

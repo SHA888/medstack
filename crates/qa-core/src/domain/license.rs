@@ -15,7 +15,7 @@ use std::fmt;
 /// Each license variant indicates the source and legal constraints on content:
 /// - `CcBySa4`: Stack Exchange and other CC BY-SA 4.0 sources (share-alike)
 /// - `CcBy4`: Biostars and other CC BY 4.0 sources (attribution-only)
-/// - `Native`: Content created within medstack (original user contributions)
+/// - `Native`: Content created within MedOverflow (original user contributions)
 /// - `LinkOnly`: FHIR Zulip and other sources where only links are mirrored (no copy)
 ///
 /// Parse-Don't-Validate: invalid/unknown licenses cannot be constructed.
@@ -26,7 +26,7 @@ pub enum License {
     CcBySa4,
     /// CC BY 4.0: attribution-only, no share-alike.
     CcBy4,
-    /// Native: original content created within medstack.
+    /// Native: original content created within MedOverflow.
     Native,
     /// Link-only: title + URL, no body copy mirrored.
     LinkOnly,

@@ -1,4 +1,4 @@
-# medstack Plans.md
+# MedOverflow Plans.md
 
 Created: 2026-06-13
 

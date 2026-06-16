@@ -5,7 +5,7 @@
 
 ## In Scope
 
-medstack exists to accrete **durable, peer-validated knowledge about clinical software, informatics, and data**. Answerable questions fit one of these categories:
+MedOverflow exists to accrete **durable, peer-validated knowledge about clinical software, informatics, and data**. Answerable questions fit one of these categories:
 
 ### Clinical Software & Systems
 - Architecture, design patterns, regulatory compliance for clinical software (EHR, pharmacy, imaging systems, etc.)
@@ -40,21 +40,21 @@ The following are **explicitly rejected**:
 - "How should I manage my condition?" — clinical guidance for an individual patient
 - "Should I see a doctor about this symptom?" — triage advice
 
-**Why**: medstack is not a clinical care tool. Patient-facing medical advice requires accountability, informed consent, and real-time physician-patient relationship. Q&A cannot provide these. Broadcasting medical guidance to unknown patients is a liability and a patient-safety boundary.
+**Why**: MedOverflow is not a clinical care tool. Patient-facing medical advice requires accountability, informed consent, and real-time physician-patient relationship. Q&A cannot provide these. Broadcasting medical guidance to unknown patients is a liability and a patient-safety boundary.
 
 ### Generic Programming & Software Engineering
 - "How do I write a REST API?" — generic software questions (Stack Overflow exists)
 - "What's the best way to structure a database?" — decontextualized engineering questions
 - "How do I learn React?" — general software learning (not clinical-context-specific)
 
-**Why**: medstack is a niche; it exists because clinician-coders have context-bound questions that SO does not serve well. Generic programming questions dilute focus and fragment the community.
+**Why**: MedOverflow is a niche; it exists because clinician-coders have context-bound questions that SO does not serve well. Generic programming questions dilute focus and fragment the community.
 
 ### Non-Clinical Medical Knowledge
 - "How does the renin-angiotensin system work?" — pure physiology (not software/informatics)
 - "What's the pathophysiology of sepsis?" — clinical science without a software/data angle
 - "How should a doctor interpret a chest X-ray?" — clinical practice (not informatics)
 
-**Why**: medstack is about *clinical software/data/informatics*, not clinical science or medical education. Those are served by other communities (medical education forums, UpToDate, etc.).
+**Why**: MedOverflow is about *clinical software/data/informatics*, not clinical science or medical education. Those are served by other communities (medical education forums, UpToDate, etc.).
 
 ### Institutional Policies & Compliance Questions (Generic)
 - "What's our hospital's IV policy?" — institutional-specific (not portable knowledge)

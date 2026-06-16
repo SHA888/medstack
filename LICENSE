@@ -18,13 +18,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ---
 
-ADDITIONAL TERMS (Section 13 clarification for medstack):
+ADDITIONAL TERMS (Section 13 clarification for MedOverflow):
 
-The medstack software — comprising the qa-core Rust library, identity-verification
+The MedOverflow software — comprising the qa-core Rust library, identity-verification
 adapter crate, ingestion/ETL tooling, and web client — is licensed under AGPL-3.0.
 
-If you modify and run medstack as a network service (including but not limited to:
-hosting a Q&A instance, offering medstack-based APIs, or deploying a derivative
+If you modify and run MedOverflow as a network service (including but not limited to:
+hosting a Q&A instance, offering MedOverflow-based APIs, or deploying a derivative
 as a web application), you must:
 
 1. Disclose the modified source code to all users of your network service
@@ -32,7 +32,7 @@ as a web application), you must:
 3. Retain this notice and all copyright attributions
 
 This is the network-copyleft provision (AGPL §13). It ensures that improvements
-to medstack made by a network operator are shared back to the community.
+to MedOverflow made by a network operator are shared back to the community.
 
 ---
 

@@ -59,10 +59,10 @@ jobs:
       # dependencies, so there is nothing to type-check or lint. These steps
       # activate once web/package.json declares its devDependencies.
       - name: tsc
-        run: pnpm --filter medstack-web exec tsc --noEmit
+        run: pnpm --filter medoverflow-web exec tsc --noEmit
         if: ${{ hashFiles('web/tsconfig.json') != '' }}
       - name: eslint
-        run: pnpm --filter medstack-web exec eslint .
+        run: pnpm --filter medoverflow-web exec eslint .
         if: ${{ hashFiles('web/.eslintrc*', 'web/eslint.config.*') != '' }}
 
   python:

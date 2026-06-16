@@ -1,4 +1,4 @@
-# medstack
+# MedOverflow
 
 A credential-gated, durable Q&A corpus for clinician-engineer hybrids — the
 people who hold a clinical license *and* ship software (physician-developers,
@@ -22,7 +22,7 @@ The existing clinician-coder spaces (Discord/Slack, AMIA forums, `chat.fhir.org`
 are **chat-shaped**: high-bandwidth, low-durability. They do not *accrete*. A
 question answered brilliantly in a Slack thread is gone in a week.
 
-medstack's one job is the thing those rooms structurally cannot do:
+MedOverflow's one job is the thing those rooms structurally cannot do:
 **produce a durable, searchable, peer-validated knowledge artifact** that
 outlives the asker and is reused by the next person.
 

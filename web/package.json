@@ -1,7 +1,7 @@
 {
-  "name": "medstack-web",
+  "name": "medoverflow-web",
   "version": "0.1.0",
-  "description": "medstack web client (TypeScript/React)",
+  "description": "MedOverflow web client (TypeScript/React)",
   "type": "module",
   "scripts": {
     "dev": "echo 'Not yet implemented'",

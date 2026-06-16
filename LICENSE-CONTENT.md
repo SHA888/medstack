@@ -2,7 +2,7 @@
 
 ## The Commons Pairing
 
-medstack uses a two-part licensing model: **AGPL-3.0 (software) + CC BY-SA 4.0 (corpus)**.
+MedOverflow uses a two-part licensing model: **AGPL-3.0 (software) + CC BY-SA 4.0 (corpus)**.
 
 Both licenses serve the same purpose: **protect the commons from closed capture**. This document explains the choice, what it permits, what it forbids, and how it applies to mirrored content.
 
@@ -26,8 +26,8 @@ We considered CC BY 4.0 (permissive, no share-alike requirement) with a separate
 
 ### What CC BY-SA means
 
-**Attribution (BY):** Anyone who uses, adapts, or builds on content from medstack must:
-- Credit the original author(s) and source (medstack)
+**Attribution (BY):** Anyone who uses, adapts, or builds on content from MedOverflow must:
+- Credit the original author(s) and source (MedOverflow)
 - Provide a link to the license or a copy of it
 - Indicate if the content was modified
 - Make this attribution visible and non-strippable
@@ -47,7 +47,7 @@ We considered CC BY 4.0 (permissive, no share-alike requirement) with a separate
 | Create a derivative Q&A site | ✅ | Must be CC BY-SA 4.0. Attribute all sources. |
 | Commercial use | ✅ | CC BY-SA permits commercial reuse. Must keep SA intact. |
 
-**The hard foreseeable:** Option A explicitly forecloses proprietary embedding of corpus snippets. If you ever wanted medstack's corpus trivially embeddable into closed clinical software, this license blocks that. We're choosing to foreclose that path on purpose — that's exactly the capture the commons is designed to resist.
+**The hard foreseeable:** Option A explicitly forecloses proprietary embedding of corpus snippets. If you ever wanted MedOverflow's corpus trivially embeddable into closed clinical software, this license blocks that. We're choosing to foreclose that path on purpose — that's exactly the capture the commons is designed to resist.
 
 ---
 
@@ -55,17 +55,17 @@ We considered CC BY 4.0 (permissive, no share-alike requirement) with a separate
 
 ### The Decision
 
-The medstack software (qa-core, identity-verification, ingestion, search, web client) is licensed under **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+The MedOverflow software (qa-core, identity-verification, ingestion, search, web client) is licensed under **GNU Affero General Public License v3.0 (AGPL-3.0)**.
 
 ### Why AGPL, not MIT/Apache?
 
-AGPL-3.0 includes Section 13: the **network-copyleft provision**. It says: if you modify and *run* medstack as a network service (not just internally, but exposed as an API or hosted instance), you must release your modifications under AGPL-3.0 to anyone using that service.
+AGPL-3.0 includes Section 13: the **network-copyleft provision**. It says: if you modify and *run* MedOverflow as a network service (not just internally, but exposed as an API or hosted instance), you must release your modifications under AGPL-3.0 to anyone using that service.
 
 **Why this matters for a community knowledge commons:**
 
-A permissive license (MIT/Apache) would let someone fork medstack, modify it, and run a closed competing instance against the community's corpus (mirrored from Stack Exchange, Biostars, etc.). The software improvements stay proprietary. The corpus stays open, but the engine that serves it is closed.
+A permissive license (MIT/Apache) would let someone fork MedOverflow, modify it, and run a closed competing instance against the community's corpus (mirrored from Stack Exchange, Biostars, etc.). The software improvements stay proprietary. The corpus stays open, but the engine that serves it is closed.
 
-AGPL-3.0 closes that moat: anyone running a modified medstack as a network service must release their source code. Improvements flow back to the community.
+AGPL-3.0 closes that moat: anyone running a modified MedOverflow as a network service must release their source code. Improvements flow back to the community.
 
 This is the software-side analogue of the content-side CC BY-SA. Both protect the commons from closed capture.
 
@@ -73,18 +73,18 @@ This is the software-side analogue of the content-side CC BY-SA. Both protect th
 
 | Use case | Permitted? | Notes |
 |----------|-----------|-------|
-| Internal use (no network exposure) | ✅ | Use medstack internally. No disclosure required. |
+| Internal use (no network exposure) | ✅ | Use MedOverflow internally. No disclosure required. |
 | Modify and use internally | ✅ | Modify the code, use it in-house. No disclosure required. |
 | Modify and distribute as source | ✅ | Distribute modified source under AGPL-3.0. |
-| Host as a network service (unmodified) | ✅ | Run medstack as-is. No disclosure needed. |
+| Host as a network service (unmodified) | ✅ | Run MedOverflow as-is. No disclosure needed. |
 | Host as a network service (modified) | ⚠️ | **Disclosure required.** You must release your modifications to users. |
-| Modify and offer as a proprietary SaaS | ❌ | Proprietary hosting of modified medstack violates AGPL-3.0. |
-| Combine with proprietary code (link) | ⚠️ | **"Linked" includes both source linking AND network service usage.** If you embed medstack in your binary (source linking), proprietary code must be AGPL-compatible. If you deploy modified medstack as a network service (API, web app), you must disclose modifications to users (AGPL §13). Both are distinct triggering conditions. Consult a lawyer. |
+| Modify and offer as a proprietary SaaS | ❌ | Proprietary hosting of modified MedOverflow violates AGPL-3.0. |
+| Combine with proprietary code (link) | ⚠️ | **"Linked" includes both source linking AND network service usage.** If you embed MedOverflow in your binary (source linking), proprietary code must be AGPL-compatible. If you deploy modified MedOverflow as a network service (API, web app), you must disclose modifications to users (AGPL §13). Both are distinct triggering conditions. Consult a lawyer. |
 
-**The network-copyleft trigger:** If you modify medstack and run it as a network service (REST API, web app, etc.), users of that service can demand the source code. This includes:
-- Running a modified medstack instance
-- Deploying medstack behind a proxy or gateway
-- Offering medstack-based services to end users
+**The network-copyleft trigger:** If you modify MedOverflow and run it as a network service (REST API, web app, etc.), users of that service can demand the source code. This includes:
+- Running a modified MedOverflow instance
+- Deploying MedOverflow behind a proxy or gateway
+- Offering MedOverflow-based services to end users
 - Hosting a derivative clinical Q&A system
 
 ---
@@ -96,7 +96,7 @@ Both licenses apply the same logic to different layers:
 | Layer | License | Protection |
 |-------|---------|-----------|
 | **Content** (corpus) | CC BY-SA 4.0 | Downstream users cannot embed the corpus into closed/proprietary products without SA obligations. Improvements to the knowledge artifact stay open. |
-| **Software** (engine) | AGPL-3.0 | Downstream operators cannot run closed forks of medstack as network services without releasing modifications. Improvements to the software stay open. |
+| **Software** (engine) | AGPL-3.0 | Downstream operators cannot run closed forks of MedOverflow as network services without releasing modifications. Improvements to the software stay open. |
 
 Together, they form a **commons-protection pairing** that's well-tested and widely understood:
 - **Wikipedia** uses this shape: GPL (MediaWiki engine) + CC BY-SA (content)
@@ -107,14 +107,14 @@ Together, they form a **commons-protection pairing** that's well-tested and wide
 
 ## Per-Source License Matrix
 
-When medstack mirrors or imports external content, the source license travels with it.
+When MedOverflow mirrors or imports external content, the source license travels with it.
 
 | Source | License | Mirroring | Attribution | Notes |
 |--------|---------|-----------|-------------|-------|
-| **Stack Exchange** (SO, SU, SF, etc.) | CC BY-SA 4.0 | Full mirror (Q&A body) | Required: author, link, license | Legally compatible with medstack CC BY-SA 4.0. Edits preserve SA. |
-| **Biostars** | CC BY 4.0 | Full mirror (Q&A body) | Required: author, link, license | CC BY is compatible with CC BY-SA 4.0 (SA obligation applies to medstack corpus as a whole). |
+| **Stack Exchange** (SO, SU, SF, etc.) | CC BY-SA 4.0 | Full mirror (Q&A body) | Required: author, link, license | Legally compatible with MedOverflow CC BY-SA 4.0. Edits preserve SA. |
+| **Biostars** | CC BY 4.0 | Full mirror (Q&A body) | Required: author, link, license | CC BY is compatible with CC BY-SA 4.0 (SA obligation applies to MedOverflow corpus as a whole). |
 | **FHIR Zulip** | Proprietary (Zulip ToS) | Link-only (no body copy) | Required: title, URL, source attribution | Cannot mirror the body due to ToS. Store only metadata + link. Attribution block always present. |
-| **Native medstack content** | CC BY-SA 4.0 | N/A (created here) | Required: author, timestamp, license | All user-generated content defaults to CC BY-SA 4.0. |
+| **Native MedOverflow content** | CC BY-SA 4.0 | N/A (created here) | Required: author, timestamp, license | All user-generated content defaults to CC BY-SA 4.0. |
 
 ---
 
@@ -123,7 +123,7 @@ When medstack mirrors or imports external content, the source license travels wi
 Every question, answer, and piece of mirrored content must render:
 
 1. **Author**: The person who wrote it
-2. **Source**: Where it came from (Stack Exchange, Biostars, medstack-native, etc.)
+2. **Source**: Where it came from (Stack Exchange, Biostars, MedOverflow-native, etc.)
 3. **License**: The applicable license (CC BY-SA 4.0, CC BY 4.0, Link-only, etc.)
 4. **Date**: When it was posted/last edited
 5. **Link** (for external sources): URL to the original
@@ -134,15 +134,15 @@ These **must be structural and non-strippable**. A user cannot remove attributio
 
 ## FAQ
 
-### Q: Can I use medstack in a closed clinical tool?
+### Q: Can I use MedOverflow in a closed clinical tool?
 
 **A:** No, not without a separate commercial license negotiation. The CC BY-SA 4.0 corpus forbids embedding in proprietary products without SA obligations, which proprietary code cannot satisfy. If this is a use case you need, contact the maintainer.
 
-### Q: Can I fork medstack and run it privately?
+### Q: Can I fork MedOverflow and run it privately?
 
-**A:** Yes, AGPL-3.0 permits internal use. You can modify and run medstack in-house without releasing changes. As soon as you expose it as a network service, disclosure becomes required.
+**A:** Yes, AGPL-3.0 permits internal use. You can modify and run MedOverflow in-house without releasing changes. As soon as you expose it as a network service, disclosure becomes required.
 
-### Q: Can I run medstack on my hospital's internal network?
+### Q: Can I run MedOverflow on my hospital's internal network?
 
 **A:** Yes. If it's strictly internal (no external users, no network exposure beyond the hospital), AGPL-3.0 doesn't require disclosure. Once you connect it to the internet or allow external users, you must release modifications.
 
@@ -150,17 +150,17 @@ These **must be structural and non-strippable**. A user cannot remove attributio
 
 **A:** You cannot, under CC BY-SA 4.0, without making your software CC BY-SA-compatible (essentially, open-sourcing it). You can cite it, link to it, quote it with attribution — but embedding the full text into proprietary code violates the SA obligation.
 
-### Q: Can I sell access to medstack?
+### Q: Can I sell access to MedOverflow?
 
-**A:** You can charge for a medstack service (AGPL-3.0 permits commercial use). But if you modify the software, you must release modifications under AGPL-3.0. If you modify the content corpus, you must release those modifications under CC BY-SA 4.0.
+**A:** You can charge for a MedOverflow service (AGPL-3.0 permits commercial use). But if you modify the software, you must release modifications under AGPL-3.0. If you modify the content corpus, you must release those modifications under CC BY-SA 4.0.
 
-### Q: What if I translate medstack into another language?
+### Q: What if I translate MedOverflow into another language?
 
 **A:** Translations are derivative works. AGPL-3.0 (software) and CC BY-SA 4.0 (content) both permit translation. You must release the translation under the same license, with attribution to the original author.
 
-### Q: Can I use medstack's content for machine learning training?
+### Q: Can I use MedOverflow's content for machine learning training?
 
-**A:** CC BY-SA 4.0 permits this use. You must attribute the source corpus and the individual authors. If you publish a model trained on medstack, you must disclose the training data source. If your model itself becomes a derivative work of the corpus (e.g., a Q&A generation model), ensure your licensing reflects SA obligations.
+**A:** CC BY-SA 4.0 permits this use. You must attribute the source corpus and the individual authors. If you publish a model trained on MedOverflow, you must disclose the training data source. If your model itself becomes a derivative work of the corpus (e.g., a Q&A generation model), ensure your licensing reflects SA obligations.
 
 ---
 

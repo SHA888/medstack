@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**medstack** is a credential-gated, durable Q&A corpus for clinician-engineers (people holding both a clinical license and shipping software). Currently in **pre-code scaffold (v0.0.0)**.
+**MedOverflow** is a credential-gated, durable Q&A corpus for clinician-engineers (people holding both a clinical license and shipping software). Currently in **pre-code scaffold (v0.0.0)**.
 
 **✅ M0 LICENSE DECISION CLOSED:**
 Decisions made and committed:
