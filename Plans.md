@@ -44,7 +44,7 @@ Created: 2026-06-13
 | 1.3.3 | Create `Vote` with `StillValid` variant | Vote enum: Helpful, Unhelpful, StillValid (perishability signal); StillValid count tracked per answer | 1.3.2 | cc:done [368d30f] |
 | 1.4.1 | Define `CredentialPort` trait | Port: fn verify_credential(id: UserId) → Option<VerifiedCredential>; identity-verification implements | 1.2.1 | cc:done [ba55ea3] |
 | 1.4.2 | Define `ContentSourcePort` trait | Port: fn source_license(id: ContentId) → License; ingestion implements per-source | 1.1.4 | cc:todo |
-| 1.4.3 | Define `SearchIndexPort` trait | Port: fn notify_content_changed(id); search projection subscribes | - | cc:todo |
+| 1.4.3 | Define `SearchIndexPort` trait | Port: fn notify_content_changed(id); search projection subscribes | - | cc:done [f3836da] |
 | 1.4.4 | Define `PersistencePort` trait | Port: fn persist(aggregate), fn retrieve(id); adapters for SQLite / Postgres | 1.3.1, 1.3.2 | cc:todo |
 | 1.5.1 | Test: unknown license fails to parse | Test asserts License::parse("unknown") returns Err; exhaustive match enforced | 1.1.4 | cc:todo |
 | 1.5.2 | Test: qa-core cannot forge VerifiedCredential (trybuild compile-fail) | Compile-fail test asserts code VerifiedCredential::new(...) in qa-core does not compile | 1.2.1 | cc:todo |
