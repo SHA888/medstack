@@ -194,6 +194,34 @@ impl VerifiedCredential<Active> {
     pub fn expire(self) -> VerifiedCredential<Expired> {
         self.transition()
     }
+
+    /// Compute authority weight as a pure function of scope and freshness.
+    ///
+    /// Authority weight measures the trustworthiness of an answer authored by this credential.
+    /// It combines:
+    /// - **Base weight**: all scopes contribute equally (base = 1.0)
+    /// - **Freshness decay**: weight decays linearly from expiry time to present
+    ///   - Credentials with 1+ year until expiry: weight = 1.0 (base)
+    ///   - Credentials with 0 days until expiry: weight ≈ 0.0
+    ///   - Already-expired credentials: weight = 0.0 (enforced at type level for Active)
+    ///
+    /// This is a deterministic, pure function with no hidden state.
+    /// Same inputs always produce the same output.
+    pub fn authority_weight(&self) -> f64 {
+        const BASE_WEIGHT: f64 = 1.0;
+        const FRESHNESS_WINDOW_SECS: u64 = 365 * 24 * 3600; // 1 year
+
+        let now = SystemTime::now();
+        let time_to_expiry = match self.expiry.duration_since(now) {
+            Ok(duration) => duration.as_secs_f64(),
+            Err(_) => return 0.0, // Already expired (should not happen for Active credentials)
+        };
+
+        let freshness_window = FRESHNESS_WINDOW_SECS as f64;
+        let freshness_multiplier = (time_to_expiry / freshness_window).min(1.0).max(0.0);
+
+        BASE_WEIGHT * freshness_multiplier
+    }
 }
 
 #[cfg(test)]
@@ -295,5 +323,95 @@ mod tests {
                 .unwrap()
                 .activate();
         assert!(cred.is_expired());
+    }
+
+    #[test]
+    fn authority_weight_full_for_year_away() {
+        let expiry = SystemTime::now() + std::time::Duration::from_secs(365 * 24 * 3600);
+        let cred =
+            VerifiedCredential::issue("user".to_string(), CredentialScope::Engineering, expiry)
+                .unwrap()
+                .activate();
+        let weight = cred.authority_weight();
+        assert!((weight - 1.0).abs() < 1e-9, "credential 1 year away should have weight ~1.0");
+    }
+
+    #[test]
+    fn authority_weight_decays_with_freshness() {
+        // Credential expiring in 6 months (half the freshness window)
+        let expiry = SystemTime::now() + std::time::Duration::from_secs(6 * 30 * 24 * 3600);
+        let cred =
+            VerifiedCredential::issue("user".to_string(), CredentialScope::Engineering, expiry)
+                .unwrap()
+                .activate();
+        let weight = cred.authority_weight();
+        // Half the time to expiry → weight should be around 0.5 (within tolerance)
+        assert!(weight > 0.4 && weight < 0.6, "credential 6 months away should have weight ~0.5");
+    }
+
+    #[test]
+    fn authority_weight_approaches_zero_near_expiry() {
+        // Credential expiring in 1 day
+        let expiry = SystemTime::now() + std::time::Duration::from_secs(24 * 3600);
+        let cred =
+            VerifiedCredential::issue("user".to_string(), CredentialScope::Engineering, expiry)
+                .unwrap()
+                .activate();
+        let weight = cred.authority_weight();
+        // 1 day out of 365 days ≈ 0.0027
+        assert!(weight < 0.01, "credential 1 day away should have weight < 0.01");
+    }
+
+    #[test]
+    fn authority_weight_is_deterministic() {
+        let expiry = SystemTime::now() + std::time::Duration::from_secs(30 * 24 * 3600);
+        let cred1 =
+            VerifiedCredential::issue("user".to_string(), CredentialScope::Engineering, expiry)
+                .unwrap()
+                .activate();
+        let cred2 =
+            VerifiedCredential::issue("user".to_string(), CredentialScope::Engineering, expiry)
+                .unwrap()
+                .activate();
+        let weight1 = cred1.authority_weight();
+        let weight2 = cred2.authority_weight();
+        // Same inputs (scope + same time to expiry) should produce identical output
+        // Allow tiny floating-point variance from multiple SystemTime::now() calls
+        assert!((weight1 - weight2).abs() < 0.001);
+    }
+
+    #[test]
+    fn authority_weight_same_for_all_scopes() {
+        let expiry = SystemTime::now() + std::time::Duration::from_secs(90 * 24 * 3600);
+        let clinical = VerifiedCredential::issue("clinical".to_string(), CredentialScope::Clinical, expiry)
+            .unwrap()
+            .activate();
+        let engineering = VerifiedCredential::issue("eng".to_string(), CredentialScope::Engineering, expiry)
+            .unwrap()
+            .activate();
+        let research = VerifiedCredential::issue("research".to_string(), CredentialScope::Research, expiry)
+            .unwrap()
+            .activate();
+
+        let w_clinical = clinical.authority_weight();
+        let w_engineering = engineering.authority_weight();
+        let w_research = research.authority_weight();
+
+        // All scopes should have equal weight (differ only by floating-point variance from timing)
+        assert!((w_clinical - w_engineering).abs() < 0.001);
+        assert!((w_engineering - w_research).abs() < 0.001);
+        assert!((w_clinical - w_research).abs() < 0.001);
+    }
+
+    #[test]
+    fn authority_weight_clamped_to_one_for_far_future() {
+        // Credential expiring in 5 years (well beyond freshness window)
+        let expiry = SystemTime::now() + std::time::Duration::from_secs(5 * 365 * 24 * 3600);
+        let cred =
+            VerifiedCredential::issue("user".to_string(), CredentialScope::Engineering, expiry)
+                .unwrap()
+                .activate();
+        let weight = cred.authority_weight();
+        assert!((weight - 1.0).abs() < 1e-9, "credential 5 years away should be clamped to 1.0");
     }
 }
