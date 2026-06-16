@@ -57,15 +57,15 @@ impl fmt::Display for CredentialScope {
 }
 
 /// Typestate marker: credential is newly issued, not yet active.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Issued;
 
 /// Typestate marker: credential is active and usable.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Active;
 
 /// Typestate marker: credential has expired.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Expired;
 
 /// Trait for valid credential states in the type system.
@@ -87,7 +87,7 @@ impl CredentialState for Expired {}
 /// - `Issued`: newly created, must be activated before use
 /// - `Active`: usable, provides access to user_id, scope, and expiry
 /// - `Expired`: no longer usable, created when expiry time is reached
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct VerifiedCredential<S: CredentialState = Active> {
     /// Opaque credential ID (counter-based, does not encode user_id).
     id: String,
@@ -99,6 +99,19 @@ pub struct VerifiedCredential<S: CredentialState = Active> {
     expiry: SystemTime,
     /// Typestate phantom marker.
     _state: PhantomData<S>,
+}
+
+impl<S: CredentialState> VerifiedCredential<S> {
+    /// Helper to transition between typestate markers by reconstructing the credential.
+    fn transition<T: CredentialState>(self) -> VerifiedCredential<T> {
+        VerifiedCredential {
+            id: self.id,
+            user_id: self.user_id,
+            scope: self.scope,
+            expiry: self.expiry,
+            _state: PhantomData,
+        }
+    }
 }
 
 impl VerifiedCredential<Issued> {
@@ -121,11 +134,11 @@ impl VerifiedCredential<Issued> {
             return Err(CredentialError::EmptyUserId);
         }
 
-        let counter = CREDENTIAL_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let counter = CREDENTIAL_COUNTER.fetch_add(1, Ordering::SeqCst);
         let id = format!("cred-{}", counter);
         Ok(VerifiedCredential {
             id,
-            user_id: user_id.clone(),
+            user_id: trimmed.to_string(),
             scope,
             expiry,
             _state: PhantomData,
@@ -135,13 +148,7 @@ impl VerifiedCredential<Issued> {
     /// Transition credential from Issued to Active state.
     /// Only Active credentials can be used to read user_id, scope, and expiry.
     pub fn activate(self) -> VerifiedCredential<Active> {
-        VerifiedCredential {
-            id: self.id,
-            user_id: self.user_id,
-            scope: self.scope,
-            expiry: self.expiry,
-            _state: PhantomData,
-        }
+        self.transition()
     }
 }
 
@@ -177,23 +184,9 @@ impl VerifiedCredential<Active> {
 
     /// Transition credential from Active to Expired state.
     pub fn expire(self) -> VerifiedCredential<Expired> {
-        VerifiedCredential {
-            id: self.id,
-            user_id: self.user_id,
-            scope: self.scope,
-            expiry: self.expiry,
-            _state: PhantomData,
-        }
+        self.transition()
     }
 }
-
-impl<S: CredentialState> PartialEq for VerifiedCredential<S> {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.user_id == other.user_id
-    }
-}
-
-impl<S: CredentialState> Eq for VerifiedCredential<S> {}
 
 #[cfg(test)]
 mod tests {
