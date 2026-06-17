@@ -47,7 +47,7 @@ Created: 2026-06-13
 | 1.4.3 | Define `SearchIndexPort` trait | Port: fn notify_content_changed(id); search projection subscribes | - | cc:done [f3836da] |
 | 1.4.4 | Define `PersistencePort` trait | Port: fn persist(aggregate), fn retrieve(id); adapters for SQLite / Postgres | 1.3.1, 1.3.2 | cc:done [f79d21e] |
 | 1.5.1 | Test: unknown license fails to parse | Test asserts License::parse("unknown") returns Err; exhaustive match enforced | 1.1.4 | cc:done [b424c85] |
-| 1.5.2 | Test: qa-core cannot forge VerifiedCredential (trybuild compile-fail) | Compile-fail test asserts code VerifiedCredential::new(...) in qa-core does not compile | 1.2.1 | cc:todo |
+| 1.5.2 | Test: qa-core cannot forge VerifiedCredential (trybuild compile-fail) | Compile-fail test asserts code VerifiedCredential::new(...) in qa-core does not compile | 1.2.1 | cc:done [f8580d3] |
 | 1.5.3 | Architecture test: qa-core has zero outward deps | Test asserts qa-core crate depends only on std/proc-macro; no imports of identity-verification, ingestion, search | 1.4.1, 1.4.2, 1.4.3, 1.4.4 | cc:todo |
 
 **M1 exit:** `qa-core` compiles as a library with zero outward deps; all invariants CI-enforced. No binary, no DB.
