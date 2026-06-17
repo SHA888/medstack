@@ -1,0 +1,14 @@
+error[E0624]: associated function `issue` is private
+  --> tests/ui/cannot_call_issue.rs:11:39
+   |
+11 |       let _forged = VerifiedCredential::issue(
+   |                                         ^^^^^ private associated function
+   |
+  ::: src/lib.rs
+   |
+   | /     pub(crate) fn issue(
+   | |         user_id: String,
+   | |         scope: CredentialScope,
+   | |         expiry: SystemTime,
+   | |     ) -> Result<Self, CredentialError> {
+   | |______________________________________- private associated function defined here

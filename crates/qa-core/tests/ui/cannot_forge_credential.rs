@@ -1,11 +1,17 @@
-// This file intentionally tries to import VerifiedCredential from identity-verification.
-// It should fail to compile because qa-core has no dependency on identity-verification.
-// This architectural constraint (verified by the architecture test in ci.yml) prevents
-// qa-core from forging credentials. The compile-fail test documents this boundary.
+// This fixture documents the FIRST line of defense: qa-core has no dependency on
+// identity-verification (enforced by tests/architecture.rs), so it cannot even
+// name `VerifiedCredential`. The import below fails to resolve (E0432), which is
+// exactly the boundary this fixture asserts: the credential type is unreachable
+// from qa-core, therefore unforgeable here.
+//
+// The SECOND line of defense — that `issue` is private even to code that *can*
+// link the crate — is tested separately in
+// identity-verification/tests/ui/cannot_call_issue.rs (E0624), because that
+// requires the dependency this fixture proves qa-core does not have.
 
 use identity_verification::VerifiedCredential;
 
 fn main() {
-    let cred = VerifiedCredential::issue("user-123".to_string()).ok();
-    let _ = cred;
+    // Unreachable: the import above does not resolve from qa-core.
+    let _: Option<VerifiedCredential> = None;
 }

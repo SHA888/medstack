@@ -8,6 +8,7 @@
 //! itself has zero outward dependencies.
 
 use crate::domain::answer::Answer;
+use crate::domain::credential::AuthoritySnapshot;
 use crate::domain::id::{AnswerId, ContentId, QuestionId, UserId};
 use crate::domain::license::License;
 use crate::domain::question::Question;
@@ -31,7 +32,12 @@ pub enum IndexableContent {
 /// This enum allows the persistence layer to store and retrieve both questions and answers
 /// using a single port interface. The persistence layer treats these as opaque aggregates
 /// and does not interpret their internal structure.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// Note: only `PartialEq` (not `Eq`) — an `Answer` may carry an
+/// `AuthoritySnapshot` whose weight is an `f64`, which is `PartialEq` but not
+/// `Eq`. Round-trip persistence tests assert equality via `PartialEq`, which is
+/// sufficient.
+#[derive(Debug, Clone, PartialEq)]
 pub enum PersistableAggregate {
     /// A question aggregate to be persisted or retrieved.
     Question(Question),
@@ -81,32 +87,72 @@ impl fmt::Display for PersistenceError {
 /// Port for credential verification.
 ///
 /// This port defines how qa-core requests verification of user credentials.
-/// The identity-verification crate implements this port, returning opaque
-/// VerifiedCredential tokens that qa-core cannot forge.
+/// The identity-verification crate implements this port. Crucially, qa-core does
+/// NOT receive the verification crate's `VerifiedCredential` (it cannot — the
+/// architecture test forbids the dependency). Instead the adapter maps a
+/// verified, active credential into qa-core's own [`AuthoritySnapshot`]: the
+/// scope and authority weight captured **as of verification time**. This keeps
+/// the seam stable (the return type lives in qa-core, so it does not change when
+/// the real credential type lands) and records authority-at-authoring rather
+/// than a bare "verified" bit.
 ///
 /// Implementations must:
-/// - Return `Some(credential)` if the user has been verified
-/// - Return `None` if the user is not verified or does not exist
-/// - Never return an invalid or expired credential (type system enforces this)
+/// - Return `Some(snapshot)` if the user has a verified, active credential
+/// - Return `None` if the user is not verified, does not exist, or is expired
+/// - Never fabricate a snapshot for an unverified user
 pub trait CredentialPort {
-    /// Verify a user by ID, returning an opaque credential token if verified.
+    /// Verify a user by ID, returning their authority snapshot if verified.
     ///
     /// # Arguments
     /// - `user_id`: The user to verify
     ///
     /// # Returns
-    /// - `Some(credential)`: User is verified and active
-    /// - `None`: User is not verified, does not exist, or is inactive
+    /// - `Some(snapshot)`: user is verified and active; carries scope + weight
+    /// - `None`: user is not verified, does not exist, or the credential expired
     ///
     /// # Implementation notes
     /// Implementers (identity-verification crate) are responsible for:
     /// - Checking user identity against external authority systems
     /// - Managing credential expiry and lifecycle
-    /// - Issuing unforgeable tokens that qa-core cannot construct
-    fn verify_credential(&self, user_id: UserId) -> Option<()>;
-    // TODO: When identity-verification is available in M2, replace Option<()>
-    // with Option<VerifiedCredential<Active>>. Keeping as () for now to avoid
-    // circular dependencies during M1 (library-only phase).
+    /// - Mapping their internal `VerifiedCredential<Active>` (scope + computed
+    ///   authority weight) into qa-core's `AuthoritySnapshot`
+    fn verify_credential(&self, user_id: UserId) -> Option<AuthoritySnapshot>;
+}
+
+/// A uniform reference to any licensable piece of content.
+///
+/// Questions and answers are addressed by their own ID newtypes, while imported
+/// material that is not a qa-core aggregate uses `ContentId`. `ContentRef` unifies
+/// the three so a caller holding *any* of them can query the licensing port —
+/// without conflating the ID namespaces (a `QuestionId(5)` and a `ContentId(5)`
+/// remain distinct references). This closes the gap where a caller holding an
+/// aggregate ID had no way to reach `source_license`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ContentRef {
+    /// A question aggregate.
+    Question(QuestionId),
+    /// An answer aggregate.
+    Answer(AnswerId),
+    /// Imported content that is not a qa-core aggregate (e.g. a mirrored row).
+    Imported(ContentId),
+}
+
+impl From<QuestionId> for ContentRef {
+    fn from(id: QuestionId) -> Self {
+        ContentRef::Question(id)
+    }
+}
+
+impl From<AnswerId> for ContentRef {
+    fn from(id: AnswerId) -> Self {
+        ContentRef::Answer(id)
+    }
+}
+
+impl From<ContentId> for ContentRef {
+    fn from(id: ContentId) -> Self {
+        ContentRef::Imported(id)
+    }
 }
 
 /// Port for content source licensing.
@@ -121,14 +167,15 @@ pub trait CredentialPort {
 /// - Legal compliance (must verify content can be used before including it)
 ///
 /// Implementations must:
-/// - Return the correct License for each content ID
+/// - Return the correct License for each content reference
 /// - Never return an unknown or invalid license (exhaustive enum enforces this)
-/// - Be consistent: same content ID always returns same license
+/// - Be consistent: same reference always returns same license
 pub trait ContentSourcePort {
-    /// Query the license of a piece of content by ID.
+    /// Query the license of a piece of content by reference.
     ///
     /// # Arguments
-    /// - `content_id`: The content to query (question, answer, or imported item)
+    /// - `content`: The content to query — a question, answer, or imported item.
+    ///   Use `ContentRef::from(question_id)` etc. when you hold an aggregate ID.
     ///
     /// # Returns
     /// - The License that applies to this content (exhaustive enum, no unknowns)
@@ -139,7 +186,7 @@ pub trait ContentSourcePort {
     /// - Assigning licenses to mirrored content based on source
     /// - Assigning licenses to native content based on platform policy
     /// - Never returning an unknown license (compile-fail test enforces this)
-    fn source_license(&self, content_id: ContentId) -> License;
+    fn source_license(&self, content: ContentRef) -> License;
 }
 
 /// Port for search index updates.
@@ -234,7 +281,15 @@ pub trait PersistencePort {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::credential::{AuthorityWeight, CredentialScope};
     use std::collections::HashMap;
+
+    fn sample_authority() -> AuthoritySnapshot {
+        AuthoritySnapshot::new(
+            CredentialScope::Engineering,
+            AuthorityWeight::new(0.9).unwrap(),
+        )
+    }
 
     /// Mock credential port for testing qa-core logic.
     struct MockCredentialPort {
@@ -250,9 +305,9 @@ mod tests {
     }
 
     impl CredentialPort for MockCredentialPort {
-        fn verify_credential(&self, user_id: UserId) -> Option<()> {
+        fn verify_credential(&self, user_id: UserId) -> Option<AuthoritySnapshot> {
             if self.verified_users.contains(&user_id.inner()) {
-                Some(())
+                Some(sample_authority())
             } else {
                 None
             }
@@ -262,33 +317,36 @@ mod tests {
     #[test]
     fn mock_port_returns_none_for_unverified() {
         let port = MockCredentialPort::new(vec![1, 2, 3]);
-        assert_eq!(port.verify_credential(UserId::new(1)), Some(()));
+        assert_eq!(
+            port.verify_credential(UserId::new(1)),
+            Some(sample_authority())
+        );
         assert_eq!(port.verify_credential(UserId::new(999)), None);
     }
 
     #[test]
     fn mock_port_verifies_users() {
         let port = MockCredentialPort::new(vec![42, 100]);
-        assert_eq!(port.verify_credential(UserId::new(42)), Some(()));
-        assert_eq!(port.verify_credential(UserId::new(100)), Some(()));
+        assert!(port.verify_credential(UserId::new(42)).is_some());
+        assert!(port.verify_credential(UserId::new(100)).is_some());
         assert_eq!(port.verify_credential(UserId::new(50)), None);
     }
 
     /// Mock content source port for testing qa-core logic.
     struct MockContentSourcePort {
-        licenses: HashMap<u64, License>,
+        licenses: HashMap<ContentRef, License>,
     }
 
     impl MockContentSourcePort {
-        fn new(licenses: HashMap<u64, License>) -> Self {
+        fn new(licenses: HashMap<ContentRef, License>) -> Self {
             MockContentSourcePort { licenses }
         }
     }
 
     impl ContentSourcePort for MockContentSourcePort {
-        fn source_license(&self, content_id: ContentId) -> License {
+        fn source_license(&self, content: ContentRef) -> License {
             self.licenses
-                .get(&content_id.inner())
+                .get(&content)
                 .copied()
                 .expect("content must have a license")
         }
@@ -297,22 +355,47 @@ mod tests {
     #[test]
     fn mock_content_port_returns_correct_licenses() {
         let mut licenses = HashMap::new();
-        licenses.insert(1, License::CcBySa4);
-        licenses.insert(2, License::CcBy4);
-        licenses.insert(3, License::LinkOnly);
+        // A question, an answer, and an imported row — three distinct namespaces,
+        // all reachable through the one port via ContentRef.
+        licenses.insert(ContentRef::from(QuestionId::new(1)), License::CcBySa4);
+        licenses.insert(ContentRef::from(AnswerId::new(2)), License::CcBy4);
+        licenses.insert(ContentRef::from(ContentId::new(3)), License::LinkOnly);
 
         let port = MockContentSourcePort::new(licenses);
 
-        assert_eq!(port.source_license(ContentId::new(1)), License::CcBySa4);
-        assert_eq!(port.source_license(ContentId::new(2)), License::CcBy4);
-        assert_eq!(port.source_license(ContentId::new(3)), License::LinkOnly);
+        assert_eq!(
+            port.source_license(QuestionId::new(1).into()),
+            License::CcBySa4
+        );
+        assert_eq!(port.source_license(AnswerId::new(2).into()), License::CcBy4);
+        assert_eq!(
+            port.source_license(ContentId::new(3).into()),
+            License::LinkOnly
+        );
+    }
+
+    #[test]
+    fn content_ref_keeps_namespaces_distinct() {
+        // QuestionId(5) and ContentId(5) are different references, not the same key.
+        let mut licenses = HashMap::new();
+        licenses.insert(ContentRef::from(QuestionId::new(5)), License::CcBySa4);
+        licenses.insert(ContentRef::from(ContentId::new(5)), License::LinkOnly);
+        let port = MockContentSourcePort::new(licenses);
+        assert_eq!(
+            port.source_license(QuestionId::new(5).into()),
+            License::CcBySa4
+        );
+        assert_eq!(
+            port.source_license(ContentId::new(5).into()),
+            License::LinkOnly
+        );
     }
 
     #[test]
     #[should_panic]
     fn mock_content_port_panics_for_unlicensed_content() {
         let port = MockContentSourcePort::new(HashMap::new());
-        let _ = port.source_license(ContentId::new(999));
+        let _ = port.source_license(ContentId::new(999).into());
     }
 
     /// Mock search index port for testing qa-core logic.
@@ -423,10 +506,7 @@ mod tests {
         fn retrieve(&self, id: AggregateId) -> Result<PersistableAggregate, PersistenceError> {
             let storage = self.storage.lock().unwrap();
             let key = Self::id_key(id);
-            storage
-                .get(&key)
-                .cloned()
-                .ok_or(PersistenceError::NotFound)
+            storage.get(&key).cloned().ok_or(PersistenceError::NotFound)
         }
     }
 
@@ -441,6 +521,8 @@ mod tests {
             Body::new("What is Rust?").unwrap(),
             UserId::new(100),
             SystemTime::now(),
+            License::Native,
+            Vec::new(),
         );
 
         let aggregate = PersistableAggregate::Question(q.clone());
@@ -466,6 +548,7 @@ mod tests {
             Body::new("Rust is a systems programming language").unwrap(),
             UserId::new(200),
             SystemTime::now(),
+            License::Native,
             None,
         );
 
@@ -499,12 +582,15 @@ mod tests {
             Body::new("Question?").unwrap(),
             UserId::new(1),
             SystemTime::now(),
+            License::Native,
+            Vec::new(),
         );
         let a = Answer::new(
             AnswerId::new(1),
             Body::new("Answer.").unwrap(),
             UserId::new(2),
             SystemTime::now(),
+            License::Native,
             None,
         );
 

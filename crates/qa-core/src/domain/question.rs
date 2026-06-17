@@ -1,10 +1,16 @@
 //! Question aggregate: the root entity for all questions in qa-core.
 //!
-//! Questions are created with a body, author, and timestamp. The revision history
-//! tracks all edits to the question body over time.
+//! Questions are created with a body, author, timestamp, license, and tags.
+//! The license travels as data on the record (the architecture's "license as
+//! data on every record" rule), and the tags carry the date/jurisdiction facets
+//! used for staleness and faceted search. The revision history tracks all edits
+//! to the question body over time, with monotonic timestamps.
 
 use crate::domain::body::Body;
 use crate::domain::id::{QuestionId, UserId};
+use crate::domain::license::License;
+use crate::domain::tag::Tag;
+use std::fmt;
 use std::time::SystemTime;
 
 /// A revision of a question body, recording when it was changed.
@@ -33,11 +39,34 @@ impl Revision {
     }
 }
 
-/// A question aggregate: an immutable collection of metadata and revision history.
+/// Error when appending a revision to an aggregate (shared by Question and Answer).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RevisionError {
+    /// The edit timestamp is earlier than the aggregate's most recent known
+    /// timestamp (its creation time, or its latest revision). Revision history
+    /// must be monotonically non-decreasing so date facets and "still valid?"
+    /// recency signals stay trustworthy.
+    NonMonotonicTimestamp,
+}
+
+impl fmt::Display for RevisionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NonMonotonicTimestamp => write!(
+                f,
+                "edit timestamp must be at or after the latest existing timestamp"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for RevisionError {}
+
+/// A question aggregate: metadata, license, tags, and revision history.
 ///
-/// Once created, a question's identity (id), author, and creation timestamp are fixed.
-/// The question body may be edited, which appends to the revision history.
-/// The current body is always accessible via `current_body()`.
+/// Once created, a question's identity (id), author, creation timestamp, and
+/// license are fixed. The question body may be edited, which appends to the
+/// revision history. The current body is always accessible via `current_body()`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Question {
     /// Unique identifier for this question.
@@ -48,13 +77,18 @@ pub struct Question {
     author_id: UserId,
     /// When the question was originally created.
     created_at: SystemTime,
+    /// The license under which this question's content is held (data on the
+    /// record, not a comment — required for attribution and reuse boundaries).
+    license: License,
+    /// Tags carrying date and jurisdiction facets for filtering and staleness.
+    tags: Vec<Tag>,
     /// All edits to the question body, in chronological order.
     /// Empty if the question has never been edited (only the current body exists).
     revisions: Vec<Revision>,
 }
 
 impl Question {
-    /// Create a new question with an initial body.
+    /// Create a new question with an initial body, license, and tags.
     ///
     /// The question starts with no revision history (revisions is empty).
     /// The current body is the initial body passed here.
@@ -63,12 +97,16 @@ impl Question {
         initial_body: Body,
         author_id: UserId,
         created_at: SystemTime,
+        license: License,
+        tags: Vec<Tag>,
     ) -> Self {
         Question {
             id,
             current_body: initial_body,
             author_id,
             created_at,
+            license,
+            tags,
             revisions: Vec::new(),
         }
     }
@@ -93,17 +131,55 @@ impl Question {
         self.created_at
     }
 
+    /// Access the license this question's content is held under.
+    pub fn license(&self) -> License {
+        self.license
+    }
+
+    /// Access the question's tags (date/jurisdiction facets).
+    pub fn tags(&self) -> &[Tag] {
+        &self.tags
+    }
+
+    /// Add a tag to this question.
+    pub fn add_tag(&mut self, tag: Tag) {
+        self.tags.push(tag);
+    }
+
     /// Access the revision history (all previous bodies).
     pub fn revisions(&self) -> &[Revision] {
         &self.revisions
     }
 
+    /// The most recent timestamp known to this aggregate: the latest revision's
+    /// time, or the creation time if there are no revisions.
+    fn latest_timestamp(&self) -> SystemTime {
+        self.revisions
+            .last()
+            .map(Revision::created_at)
+            .unwrap_or(self.created_at)
+    }
+
     /// Edit the question body, recording the old body as a revision.
     ///
     /// The current body becomes a revision, and the new body becomes current.
-    pub fn edit_body(&mut self, new_body: Body, edited_at: SystemTime) {
+    ///
+    /// # Errors
+    ///
+    /// Returns `RevisionError::NonMonotonicTimestamp` if `edited_at` is earlier
+    /// than the aggregate's latest known timestamp. The body is left unchanged
+    /// in that case.
+    pub fn edit_body(
+        &mut self,
+        new_body: Body,
+        edited_at: SystemTime,
+    ) -> Result<(), RevisionError> {
+        if edited_at < self.latest_timestamp() {
+            return Err(RevisionError::NonMonotonicTimestamp);
+        }
         let old_body = std::mem::replace(&mut self.current_body, new_body);
         self.revisions.push(Revision::new(old_body, edited_at));
+        Ok(())
     }
 
     /// Get the total number of revisions (edits) to this question.
@@ -115,9 +191,19 @@ impl Question {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::tag::{Jurisdiction, Tag};
 
     fn make_test_body(s: &str) -> Body {
         Body::new(s).expect("valid test body")
+    }
+
+    fn sample_tags() -> Vec<Tag> {
+        vec![Tag::new(
+            "clinical-software",
+            "2025-06-14",
+            Jurisdiction::new("US").unwrap(),
+        )
+        .expect("valid tag")]
     }
 
     #[test]
@@ -127,13 +213,51 @@ mod tests {
         let author = UserId::new(42);
         let created_at = SystemTime::now();
 
-        let question = Question::new(id, body.clone(), author, created_at);
+        let question = Question::new(
+            id,
+            body.clone(),
+            author,
+            created_at,
+            License::Native,
+            sample_tags(),
+        );
 
         assert_eq!(question.id(), id);
         assert_eq!(question.current_body(), &body);
         assert_eq!(question.author_id(), author);
         assert_eq!(question.created_at(), created_at);
+        assert_eq!(question.license(), License::Native);
+        assert_eq!(question.tags().len(), 1);
         assert_eq!(question.revisions(), &[]);
+    }
+
+    #[test]
+    fn license_travels_on_the_record() {
+        let q = Question::new(
+            QuestionId::new(1),
+            make_test_body("Mirrored question body"),
+            UserId::new(1),
+            SystemTime::now(),
+            License::CcBySa4,
+            sample_tags(),
+        );
+        assert_eq!(q.license(), License::CcBySa4);
+    }
+
+    #[test]
+    fn tags_can_be_added() {
+        let mut q = Question::new(
+            QuestionId::new(1),
+            make_test_body("Question"),
+            UserId::new(1),
+            SystemTime::now(),
+            License::Native,
+            Vec::new(),
+        );
+        assert_eq!(q.tags().len(), 0);
+        q.add_tag(Tag::new("fhir", "2025-06-14", Jurisdiction::new("ID").unwrap()).unwrap());
+        assert_eq!(q.tags().len(), 1);
+        assert_eq!(q.tags()[0].label(), "fhir");
     }
 
     #[test]
@@ -143,12 +267,19 @@ mod tests {
         let author = UserId::new(100);
         let created_at = SystemTime::now();
 
-        let mut question = Question::new(id, initial_body.clone(), author, created_at);
+        let mut question = Question::new(
+            id,
+            initial_body.clone(),
+            author,
+            created_at,
+            License::Native,
+            sample_tags(),
+        );
         assert_eq!(question.revision_count(), 0);
 
-        let edit_time = SystemTime::now();
+        let edit_time = created_at + std::time::Duration::from_secs(10);
         let new_body = make_test_body("Updated question with more detail");
-        question.edit_body(new_body.clone(), edit_time);
+        question.edit_body(new_body.clone(), edit_time).unwrap();
 
         assert_eq!(question.current_body(), &new_body);
         assert_eq!(question.revision_count(), 1);
@@ -157,39 +288,81 @@ mod tests {
     }
 
     #[test]
+    fn edit_rejects_non_monotonic_timestamp() {
+        let created_at = SystemTime::now();
+        let mut question = Question::new(
+            QuestionId::new(3),
+            make_test_body("Original"),
+            UserId::new(1),
+            created_at,
+            License::Native,
+            sample_tags(),
+        );
+
+        // An edit dated before creation is rejected; the body is untouched.
+        let before = created_at - std::time::Duration::from_secs(1);
+        assert_eq!(
+            question.edit_body(make_test_body("Backdated"), before),
+            Err(RevisionError::NonMonotonicTimestamp)
+        );
+        assert_eq!(question.current_body(), &make_test_body("Original"));
+        assert_eq!(question.revision_count(), 0);
+
+        // A later edit succeeds; a subsequent edit before it is rejected.
+        let t1 = created_at + std::time::Duration::from_secs(10);
+        question.edit_body(make_test_body("v2"), t1).unwrap();
+        let between = created_at + std::time::Duration::from_secs(5);
+        assert_eq!(
+            question.edit_body(make_test_body("out of order"), between),
+            Err(RevisionError::NonMonotonicTimestamp)
+        );
+    }
+
+    #[test]
+    fn equal_timestamp_edit_is_allowed() {
+        let created_at = SystemTime::now();
+        let mut question = Question::new(
+            QuestionId::new(4),
+            make_test_body("Original"),
+            UserId::new(1),
+            created_at,
+            License::Native,
+            sample_tags(),
+        );
+        // edited_at == latest is non-decreasing, so it is accepted.
+        assert!(question
+            .edit_body(make_test_body("same instant"), created_at)
+            .is_ok());
+    }
+
+    #[test]
     fn multiple_edits_accumulate_revisions() {
-        let id = QuestionId::new(3);
+        let id = QuestionId::new(5);
         let body1 = make_test_body("First version");
         let author = UserId::new(200);
         let created_at = SystemTime::now();
 
-        let mut question = Question::new(id, body1.clone(), author, created_at);
+        let mut question = Question::new(
+            id,
+            body1.clone(),
+            author,
+            created_at,
+            License::Native,
+            sample_tags(),
+        );
 
         let time1 = created_at + std::time::Duration::from_secs(1);
         let body2 = make_test_body("Second version");
-        question.edit_body(body2.clone(), time1);
+        question.edit_body(body2.clone(), time1).unwrap();
 
         let time2 = created_at + std::time::Duration::from_secs(2);
         let body3 = make_test_body("Third version");
-        question.edit_body(body3.clone(), time2);
+        question.edit_body(body3.clone(), time2).unwrap();
 
         assert_eq!(question.revision_count(), 2);
         assert_eq!(question.current_body(), &body3);
         assert_eq!(question.revisions()[0].body(), &body1);
         assert_eq!(question.revisions()[1].body(), &body2);
-    }
-
-    #[test]
-    fn question_id_immutable() {
-        let id = QuestionId::new(999);
-        let body = make_test_body("Test");
-        let author = UserId::new(1);
-        let created_at = SystemTime::now();
-
-        let question = Question::new(id, body, author, created_at);
-        assert_eq!(question.id(), id);
-        // Verify immutability through identity comparison
-        assert_eq!(question.id(), QuestionId::new(999));
     }
 
     #[test]
@@ -199,30 +372,21 @@ mod tests {
         let author = UserId::new(7);
         let original_created = SystemTime::now();
 
-        let mut question = Question::new(id, body, author, original_created);
+        let mut question = Question::new(
+            id,
+            body,
+            author,
+            original_created,
+            License::Native,
+            sample_tags(),
+        );
 
         let edit_time = original_created + std::time::Duration::from_secs(3600);
         let new_body = make_test_body("Edited");
-        question.edit_body(new_body, edit_time);
+        question.edit_body(new_body, edit_time).unwrap();
 
         assert_eq!(question.author_id(), author);
         assert_eq!(question.created_at(), original_created);
-    }
-
-    #[test]
-    fn revision_preserves_timestamp() {
-        let id = QuestionId::new(5);
-        let body = make_test_body("Initial");
-        let author = UserId::new(10);
-        let created_at = SystemTime::now();
-
-        let mut question = Question::new(id, body, author, created_at);
-
-        let specific_time = created_at + std::time::Duration::from_secs(7200);
-        let new_body = make_test_body("Modified");
-        question.edit_body(new_body, specific_time);
-
-        assert_eq!(question.revisions()[0].created_at(), specific_time);
     }
 
     #[test]
@@ -232,7 +396,7 @@ mod tests {
         let author = UserId::new(22);
         let created_at = SystemTime::now();
 
-        let question = Question::new(id, body, author, created_at);
+        let question = Question::new(id, body, author, created_at, License::Native, sample_tags());
         let cloned = question.clone();
 
         assert_eq!(question, cloned);

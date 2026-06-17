@@ -1,17 +1,23 @@
-//! Domain identity types: QuestionId, AnswerId, UserId.
+//! Domain identity types: QuestionId, AnswerId, UserId, ContentId.
 //!
-//! These are opaque newtypes that make identity confusion impossible at compile time.
-//! Only the qa-core domain module can construct them. Outside code must use the
-//! provided constructors.
+//! These are distinct newtypes that make identity *confusion* impossible at
+//! compile time: a `QuestionId` cannot be passed where an `AnswerId` is expected,
+//! and the wrapped `u64` cannot be read or compared except through the typed API.
+//!
+//! The constructors are intentionally public: adapters (persistence, ingestion,
+//! search) must mint these from stored rows when rehydrating aggregates. The
+//! guarantee is type-distinctness, NOT constructor privacy — an ID carries no
+//! authority on its own, so being constructible is harmless. (Contrast
+//! `VerifiedCredential`, whose constructor IS private because it carries trust.)
 
 /// Unique identifier for a question.
 ///
-/// Private constructor enforces that only qa-core can create question IDs.
+/// A distinct newtype: cannot be confused with any other ID type at compile time.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct QuestionId(u64);
 
 impl QuestionId {
-    /// Construct a new QuestionId. Only qa-core domain module can call this.
+    /// Construct a QuestionId (public: adapters mint these when loading rows).
     pub fn new(id: u64) -> Self {
         QuestionId(id)
     }
@@ -30,12 +36,12 @@ impl std::fmt::Display for QuestionId {
 
 /// Unique identifier for an answer.
 ///
-/// Private constructor enforces that only qa-core can create answer IDs.
+/// A distinct newtype: cannot be confused with any other ID type at compile time.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct AnswerId(u64);
 
 impl AnswerId {
-    /// Construct a new AnswerId. Only qa-core domain module can call this.
+    /// Construct an AnswerId (public: adapters mint these when loading rows).
     pub fn new(id: u64) -> Self {
         AnswerId(id)
     }
@@ -54,12 +60,12 @@ impl std::fmt::Display for AnswerId {
 
 /// Unique identifier for a user.
 ///
-/// Private constructor enforces that only qa-core can create user IDs.
+/// A distinct newtype: cannot be confused with any other ID type at compile time.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UserId(u64);
 
 impl UserId {
-    /// Construct a new UserId. Only qa-core domain module can call this.
+    /// Construct a UserId (public: adapters mint these when loading rows).
     pub fn new(id: u64) -> Self {
         UserId(id)
     }
@@ -76,15 +82,18 @@ impl std::fmt::Display for UserId {
     }
 }
 
-/// Unique identifier for a piece of content (question, answer, or imported).
+/// Unique identifier for an imported piece of content that is not itself a
+/// qa-core aggregate (e.g. a mirrored Stack Exchange / Biostars row).
 ///
-/// Private constructor enforces that only qa-core can create content IDs.
-/// Used to reference content when querying external systems (e.g., ingestion for license info).
+/// A distinct newtype: cannot be confused with any other ID type at compile time.
+/// Questions and answers are addressed by `QuestionId` / `AnswerId`; to query a
+/// license across all content kinds uniformly, use `ports::ContentRef`, which
+/// maps each kind into the licensing port without conflating the ID namespaces.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ContentId(u64);
 
 impl ContentId {
-    /// Construct a new ContentId. Only qa-core domain module can call this.
+    /// Construct a ContentId (public: adapters mint these when loading rows).
     pub fn new(id: u64) -> Self {
         ContentId(id)
     }
