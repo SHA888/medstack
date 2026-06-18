@@ -68,6 +68,8 @@ impl Answer {
 
     /// Reconstruct an answer from storage, with current body, revision history, and votes.
     /// Used by persistence adapters to restore state from durable storage.
+    /// Validates that revision timestamps are monotonically non-decreasing and that votes
+    /// are deduplicated per (voter, axis).
     pub fn from_stored(
         id: AnswerId,
         current_body: Body,
@@ -77,8 +79,24 @@ impl Answer {
         credential: Option<AuthoritySnapshot>,
         revisions: Vec<Revision>,
         votes: Vec<CastVote>,
-    ) -> Self {
-        Answer {
+    ) -> Result<Self, RevisionError> {
+        let mut latest = created_at;
+        for rev in &revisions {
+            if rev.created_at() < latest {
+                return Err(RevisionError::NonMonotonicTimestamp);
+            }
+            latest = rev.created_at();
+        }
+
+        let mut seen_votes = std::collections::HashSet::new();
+        for vote in &votes {
+            let key = (vote.voter(), vote.vote().axis());
+            if !seen_votes.insert(key) {
+                return Err(RevisionError::NonMonotonicTimestamp);
+            }
+        }
+
+        Ok(Answer {
             id,
             current_body,
             author_id,
@@ -87,7 +105,7 @@ impl Answer {
             credential,
             revisions,
             votes,
-        }
+        })
     }
 
     /// Access the answer's unique identifier.

@@ -113,6 +113,7 @@ impl Question {
 
     /// Reconstruct a question from storage, with current body and revision history.
     /// Used by persistence adapters to restore state from durable storage.
+    /// Validates that revision timestamps are monotonically non-decreasing.
     pub fn from_stored(
         id: QuestionId,
         current_body: Body,
@@ -121,8 +122,15 @@ impl Question {
         license: License,
         tags: Vec<Tag>,
         revisions: Vec<Revision>,
-    ) -> Self {
-        Question {
+    ) -> Result<Self, RevisionError> {
+        let mut latest = created_at;
+        for rev in &revisions {
+            if rev.created_at() < latest {
+                return Err(RevisionError::NonMonotonicTimestamp);
+            }
+            latest = rev.created_at();
+        }
+        Ok(Question {
             id,
             current_body,
             author_id,
@@ -130,7 +138,7 @@ impl Question {
             license,
             tags,
             revisions,
-        }
+        })
     }
 
     /// Access the question's unique identifier.

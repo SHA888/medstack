@@ -93,6 +93,7 @@ impl SqlitePersistence {
                 answer_id INTEGER NOT NULL,
                 voter_id INTEGER NOT NULL,
                 vote_type TEXT NOT NULL,
+                UNIQUE(answer_id, voter_id, vote_type),
                 FOREIGN KEY(answer_id) REFERENCES answers(id)
             );
         "#,
@@ -110,6 +111,9 @@ fn system_time_to_parts(time: SystemTime) -> Result<(i64, i32), PersistenceError
 }
 
 fn parts_to_system_time(secs: i64, nanos: i32) -> Result<SystemTime, PersistenceError> {
+    if nanos < 0 || nanos >= 1_000_000_000 {
+        return Err(PersistenceError::SerializationError);
+    }
     SystemTime::UNIX_EPOCH
         .checked_add(std::time::Duration::new(secs as u64, nanos as u32))
         .ok_or(PersistenceError::SerializationError)
@@ -126,6 +130,7 @@ fn license_to_string(license: &License) -> String {
 }
 
 /// Deserialize a License from a string.
+/// Validates that the string matches one of the known License enum variants.
 fn string_to_license(s: &str) -> Result<License, PersistenceError> {
     match s {
         "CcBySa4" => Ok(License::CcBySa4),
@@ -216,6 +221,7 @@ fn vote_to_string(vote: &Vote) -> String {
 }
 
 /// Deserialize a Vote from a string.
+/// Validates that the string matches one of the known Vote enum variants.
 fn string_to_vote(s: &str) -> Result<Vote, PersistenceError> {
     match s {
         "Helpful" => Ok(Vote::Helpful),
@@ -353,7 +359,7 @@ impl SqlitePersistence {
             reconstructed_revisions.push(Revision::new(body, rev_time));
         }
 
-        Ok(Question::from_stored(
+        Question::from_stored(
             id,
             current_body,
             author_id,
@@ -361,7 +367,8 @@ impl SqlitePersistence {
             license,
             tags,
             reconstructed_revisions,
-        ))
+        )
+        .map_err(|_| PersistenceError::SerializationError)
     }
 
     fn persist_answer(&self, answer: &Answer) -> Result<(), PersistenceError> {
@@ -534,7 +541,7 @@ impl SqlitePersistence {
             reconstructed_votes.push(CastVote::new(voter, vote));
         }
 
-        Ok(Answer::from_stored(
+        Answer::from_stored(
             id,
             current_body,
             author_id,
@@ -543,7 +550,8 @@ impl SqlitePersistence {
             credential,
             reconstructed_revisions,
             reconstructed_votes,
-        ))
+        )
+        .map_err(|_| PersistenceError::SerializationError)
     }
 }
 
