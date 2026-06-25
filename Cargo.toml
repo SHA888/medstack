@@ -4,6 +4,7 @@ members = [
   "crates/identity-verification",
   "crates/ingestion",
   "crates/search",
+  "crates/persistence-common",
   "crates/persistence-sqlite",
   "crates/persistence-postgres",
 ]

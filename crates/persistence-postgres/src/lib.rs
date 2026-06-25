@@ -8,18 +8,18 @@
 use postgres::{Client, NoTls};
 use qa_core::domain::answer::Answer;
 use qa_core::domain::body::Body;
-use qa_core::domain::credential::AuthoritySnapshot;
 use qa_core::domain::id::{AnswerId, QuestionId, UserId};
-use qa_core::domain::license::License;
 use qa_core::domain::ports::{
     AggregateId, PersistableAggregate, PersistenceError, PersistencePort,
 };
 use qa_core::domain::question::{Question, Revision};
-use qa_core::domain::tag::Tag;
-use qa_core::domain::vote::{CastVote, Vote};
-use serde::{Deserialize, Serialize};
+use qa_core::domain::vote::CastVote;
+use persistence_common::{
+    system_time_to_parts, parts_to_system_time, license_to_string, string_to_license,
+    tags_to_json, json_to_tags, credential_to_json, json_to_credential,
+    vote_to_string, vote_to_axis, string_to_vote,
+};
 use std::cell::RefCell;
-use std::time::SystemTime;
 
 /// Postgres-backed persistence adapter.
 ///
@@ -93,7 +93,8 @@ impl PostgresPersistence {
                 answer_id BIGINT NOT NULL,
                 voter_id BIGINT NOT NULL,
                 vote_type TEXT NOT NULL,
-                UNIQUE(answer_id, voter_id, vote_type),
+                vote_axis TEXT NOT NULL,
+                UNIQUE(answer_id, voter_id, vote_axis),
                 FOREIGN KEY(answer_id) REFERENCES answers(id)
             );
         "#,
@@ -102,134 +103,10 @@ impl PostgresPersistence {
     }
 }
 
-/// Helper to serialize/deserialize SystemTime to/from seconds and nanoseconds.
-fn system_time_to_parts(time: SystemTime) -> Result<(i64, i32), PersistenceError> {
-    let duration = time
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .map_err(|_| PersistenceError::SerializationError)?;
-    Ok((duration.as_secs() as i64, duration.subsec_nanos() as i32))
-}
 
-fn parts_to_system_time(secs: i64, nanos: i32) -> Result<SystemTime, PersistenceError> {
-    if !(0..1_000_000_000).contains(&nanos) {
-        return Err(PersistenceError::SerializationError);
-    }
-    SystemTime::UNIX_EPOCH
-        .checked_add(std::time::Duration::new(secs as u64, nanos as u32))
-        .ok_or(PersistenceError::SerializationError)
-}
 
-/// Serialize a License to a string.
-fn license_to_string(license: &License) -> String {
-    match license {
-        License::CcBySa4 => "CcBySa4".to_string(),
-        License::CcBy4 => "CcBy4".to_string(),
-        License::Native => "Native".to_string(),
-        License::LinkOnly => "LinkOnly".to_string(),
-    }
-}
 
-/// Deserialize a License from a string.
-/// Validates that the string matches one of the known License enum variants.
-fn string_to_license(s: &str) -> Result<License, PersistenceError> {
-    match s {
-        "CcBySa4" => Ok(License::CcBySa4),
-        "CcBy4" => Ok(License::CcBy4),
-        "Native" => Ok(License::Native),
-        "LinkOnly" => Ok(License::LinkOnly),
-        _ => Err(PersistenceError::SerializationError),
-    }
-}
 
-/// Serialize a Vec<Tag> to JSON.
-fn tags_to_json(tags: &[Tag]) -> Result<String, PersistenceError> {
-    let serialized: Vec<TagSerialized> = tags.iter().map(TagSerialized::from_tag).collect();
-    serde_json::to_string(&serialized).map_err(|_| PersistenceError::SerializationError)
-}
-
-/// Deserialize a Vec<Tag> from JSON.
-fn json_to_tags(json: &str) -> Result<Vec<Tag>, PersistenceError> {
-    let serialized: Vec<TagSerialized> =
-        serde_json::from_str(json).map_err(|_| PersistenceError::SerializationError)?;
-    serialized
-        .iter()
-        .map(TagSerialized::to_tag)
-        .collect::<Result<Vec<_>, _>>()
-}
-
-#[derive(Serialize, Deserialize)]
-struct TagSerialized {
-    label: String,
-    date: String,
-    jurisdiction: String,
-}
-
-impl TagSerialized {
-    fn from_tag(tag: &Tag) -> Self {
-        TagSerialized {
-            label: tag.label().to_string(),
-            date: format!("{}", tag.date()),
-            jurisdiction: tag.jurisdiction().as_str().to_string(),
-        }
-    }
-
-    fn to_tag(&self) -> Result<Tag, PersistenceError> {
-        let jurisdiction = qa_core::domain::tag::Jurisdiction::new(&self.jurisdiction)
-            .map_err(|_| PersistenceError::SerializationError)?;
-        Tag::new(&self.label, &self.date, jurisdiction)
-            .map_err(|_| PersistenceError::SerializationError)
-    }
-}
-
-/// Serialize AuthoritySnapshot to JSON.
-fn credential_to_json(cred: &AuthoritySnapshot) -> Result<String, PersistenceError> {
-    let serialized = CredentialSerialized {
-        scope: format!("{}", cred.scope()),
-        weight: cred.weight().value(),
-    };
-    serde_json::to_string(&serialized).map_err(|_| PersistenceError::SerializationError)
-}
-
-/// Deserialize AuthoritySnapshot from JSON.
-fn json_to_credential(json: &str) -> Result<AuthoritySnapshot, PersistenceError> {
-    let serialized: CredentialSerialized =
-        serde_json::from_str(json).map_err(|_| PersistenceError::SerializationError)?;
-    let scope = match serialized.scope.as_str() {
-        "Clinical" => qa_core::domain::credential::CredentialScope::Clinical,
-        "Engineering" => qa_core::domain::credential::CredentialScope::Engineering,
-        "Research" => qa_core::domain::credential::CredentialScope::Research,
-        _ => return Err(PersistenceError::SerializationError),
-    };
-    let weight = qa_core::domain::credential::AuthorityWeight::new(serialized.weight)
-        .map_err(|_| PersistenceError::SerializationError)?;
-    Ok(AuthoritySnapshot::new(scope, weight))
-}
-
-#[derive(Serialize, Deserialize)]
-struct CredentialSerialized {
-    scope: String,
-    weight: f64,
-}
-
-/// Serialize a Vote to a string.
-fn vote_to_string(vote: &Vote) -> String {
-    match vote {
-        Vote::Helpful => "Helpful".to_string(),
-        Vote::Unhelpful => "Unhelpful".to_string(),
-        Vote::StillValid => "StillValid".to_string(),
-    }
-}
-
-/// Deserialize a Vote from a string.
-/// Validates that the string matches one of the known Vote enum variants.
-fn string_to_vote(s: &str) -> Result<Vote, PersistenceError> {
-    match s {
-        "Helpful" => Ok(Vote::Helpful),
-        "Unhelpful" => Ok(Vote::Unhelpful),
-        "StillValid" => Ok(Vote::StillValid),
-        _ => Err(PersistenceError::SerializationError),
-    }
-}
 
 impl PersistencePort for PostgresPersistence {
     fn persist(&self, aggregate: PersistableAggregate) -> Result<(), PersistenceError> {
@@ -259,9 +136,12 @@ impl PostgresPersistence {
         let tags_json = tags_to_json(question.tags())?;
 
         let mut client = self.client.borrow_mut();
-        client
-            .execute(
-                r#"
+        let mut tx = client
+            .transaction()
+            .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
+
+        tx.execute(
+            r#"
             INSERT INTO questions
             (id, current_body, author_id, created_at_secs, created_at_nanos, license, tags_json)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -273,43 +153,42 @@ impl PostgresPersistence {
                 license = EXCLUDED.license,
                 tags_json = EXCLUDED.tags_json
         "#,
-                &[
-                    &id,
-                    &current_body,
-                    &author_id,
-                    &created_at_secs,
-                    &created_at_nanos,
-                    &license,
-                    &tags_json,
-                ],
-            )
-            .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
+            &[
+                &id,
+                &current_body,
+                &author_id,
+                &created_at_secs,
+                &created_at_nanos,
+                &license,
+                &tags_json,
+            ],
+        )
+        .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
 
         // Clear existing revisions for this question
-        client
-            .execute(
-                "DELETE FROM question_revisions WHERE question_id = $1",
-                &[&id],
-            )
-            .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
+        tx.execute(
+            "DELETE FROM question_revisions WHERE question_id = $1",
+            &[&id],
+        )
+        .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
 
         // Insert revisions
         for revision in question.revisions() {
             let body = revision.body().as_str().to_string();
             let (rev_secs, rev_nanos) = system_time_to_parts(revision.created_at())?;
-            client
-                .execute(
-                    r#"
+            tx.execute(
+                r#"
                 INSERT INTO question_revisions
                 (question_id, body, created_at_secs, created_at_nanos)
                 VALUES ($1, $2, $3, $4)
             "#,
-                    &[&id, &body, &rev_secs, &rev_nanos],
-                )
-                .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
+                &[&id, &body, &rev_secs, &rev_nanos],
+            )
+            .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
         }
 
-        Ok(())
+        tx.commit()
+            .map_err(|e| PersistenceError::DatabaseError(e.to_string()))
     }
 
     fn retrieve_question(&self, id: QuestionId) -> Result<Question, PersistenceError> {
@@ -381,9 +260,12 @@ impl PostgresPersistence {
         let credential_json = answer.credential().map(credential_to_json).transpose()?;
 
         let mut client = self.client.borrow_mut();
-        client
-            .execute(
-                r#"
+        let mut tx = client
+            .transaction()
+            .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
+
+        tx.execute(
+            r#"
             INSERT INTO answers
             (id, current_body, author_id, created_at_secs, created_at_nanos, license, credential_json)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -395,61 +277,59 @@ impl PostgresPersistence {
                 license = EXCLUDED.license,
                 credential_json = EXCLUDED.credential_json
         "#,
-                &[
-                    &id,
-                    &current_body,
-                    &author_id,
-                    &created_at_secs,
-                    &created_at_nanos,
-                    &license,
-                    &credential_json,
-                ],
-            )
-            .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
+            &[
+                &id,
+                &current_body,
+                &author_id,
+                &created_at_secs,
+                &created_at_nanos,
+                &license,
+                &credential_json,
+            ],
+        )
+        .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
 
         // Clear existing revisions for this answer
-        client
-            .execute("DELETE FROM answer_revisions WHERE answer_id = $1", &[&id])
+        tx.execute("DELETE FROM answer_revisions WHERE answer_id = $1", &[&id])
             .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
 
         // Insert revisions
         for revision in answer.revisions() {
             let body = revision.body().as_str().to_string();
             let (rev_secs, rev_nanos) = system_time_to_parts(revision.created_at())?;
-            client
-                .execute(
-                    r#"
+            tx.execute(
+                r#"
                 INSERT INTO answer_revisions
                 (answer_id, body, created_at_secs, created_at_nanos)
                 VALUES ($1, $2, $3, $4)
             "#,
-                    &[&id, &body, &rev_secs, &rev_nanos],
-                )
-                .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
+                &[&id, &body, &rev_secs, &rev_nanos],
+            )
+            .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
         }
 
         // Clear existing votes for this answer
-        client
-            .execute("DELETE FROM answer_votes WHERE answer_id = $1", &[&id])
+        tx.execute("DELETE FROM answer_votes WHERE answer_id = $1", &[&id])
             .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
 
         // Insert votes
         for vote in answer.votes() {
             let voter_id = vote.voter().inner() as i64;
             let vote_type = vote_to_string(&vote.vote());
-            client
-                .execute(
-                    r#"
+            let vote_axis = vote_to_axis(&vote.vote());
+            tx.execute(
+                r#"
                 INSERT INTO answer_votes
-                (answer_id, voter_id, vote_type)
-                VALUES ($1, $2, $3)
+                (answer_id, voter_id, vote_type, vote_axis)
+                VALUES ($1, $2, $3, $4)
             "#,
-                    &[&id, &voter_id, &vote_type],
-                )
-                .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
+                &[&id, &voter_id, &vote_type, &vote_axis],
+            )
+            .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
         }
 
-        Ok(())
+        tx.commit()
+            .map_err(|e| PersistenceError::DatabaseError(e.to_string()))
     }
 
     fn retrieve_answer(&self, id: AnswerId) -> Result<Answer, PersistenceError> {
@@ -506,7 +386,7 @@ impl PostgresPersistence {
         // Retrieve votes
         let vote_rows = client
             .query(
-                "SELECT voter_id, vote_type FROM answer_votes WHERE answer_id = $1 ORDER BY id",
+                "SELECT voter_id, vote_type, vote_axis FROM answer_votes WHERE answer_id = $1 ORDER BY id",
                 &[&id_i64],
             )
             .map_err(|e| PersistenceError::DatabaseError(e.to_string()))?;
