@@ -5,6 +5,7 @@ members = [
   "crates/ingestion",
   "crates/search",
   "crates/persistence-sqlite",
+  "crates/persistence-postgres",
 ]
 resolver = "2"
 
