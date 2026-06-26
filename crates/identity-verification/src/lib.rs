@@ -18,6 +18,8 @@
 //! still-valid ones) and re-checked at use (`authority_weight` returns 0.0
 //! once `as_of` is past expiry).
 
+pub mod generic_adapter;
+
 use std::fmt;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, Ordering};

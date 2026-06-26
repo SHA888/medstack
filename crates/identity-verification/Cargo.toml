@@ -6,6 +6,7 @@ authors.workspace = true
 license.workspace = true
 
 [dependencies]
+qa-core = { path = "../qa-core" }
 
 [dev-dependencies]
 trybuild = "1.0"
