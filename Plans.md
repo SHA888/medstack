@@ -60,7 +60,7 @@ Created: 2026-06-13
 |------|---------|-----|---------|--------|
 | 2.1.1 | Create SQLite adapter for `PersistencePort` | Adapter: question/answer/vote persistence to SQLite; schema defined; all M1 aggregates round-trip | Phase 1 | cc:done [0f76652] |
 | 2.1.2 | Create Postgres adapter for `PersistencePort` | Adapter: question/answer/vote persistence to Postgres; same schema; all M1 aggregates round-trip | 2.1.1 | cc:done [a2cc3d2] |
-| 2.1.3 | Run conformance test suite against both adapters | Single test suite runs against SQLite and Postgres in parallel; all tests pass on both | 2.1.1, 2.1.2 | cc:todo |
+| 2.1.3 | Run conformance test suite against both adapters | Single test suite runs against SQLite and Postgres in parallel; all tests pass on both | 2.1.1, 2.1.2 | cc:done |
 | 2.2.1 | Create generic identity-verification adapter (ORCID + institutional email + manual review) | Adapter verifies ORCID, institutional email domain, manual review flag; issues VerifiedCredential with scope and expiry | - | cc:todo |
 | 2.2.2 | Design Indonesia adapter (STR/KKI) — stub behind feature flag | Design document and stub implementation; feature flag controls activation; no external calls yet | - | cc:todo |
 | 2.2.3 | Design US adapter (NPI) — stub behind feature flag | Design document and stub implementation; feature flag controls activation; no external calls yet | - | cc:todo |

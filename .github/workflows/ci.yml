@@ -43,6 +43,15 @@ jobs:
       # Integration test target; run the whole `architecture` test file.
       - run: cargo test --package qa-core --test architecture
 
+  persistence:
+    name: Persistence (SQLite conformance tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # Run conformance tests for SQLite adapter (in-memory tests, no external DB needed)
+      - run: cargo test --package persistence-sqlite --test conformance
+
   typescript:
     name: TypeScript (tsc, eslint)
     runs-on: ubuntu-latest
